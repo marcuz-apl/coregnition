@@ -23,4 +23,8 @@ java -Djava.library.path=/usr/lib/jni -cp backend/target/classes:/usr/share/java
 
 The command must show that `org.opencv.core.Core` loads and that OpenCV decodes each supplied PNG fixture. The production Linux package must instead bundle matching native libraries. Do not substitute a different binding without updating the architecture decision.
 
-The current automated build validates the backend, JavaFX compilation and PNG header parsing. It cannot claim OpenCV native loading until the local Ubuntu package is installed and the probe succeeds.
+## Current result
+
+On the WSL Ubuntu x64 development environment, `libopencv-java` version `4.6.0+dfsg-13.1ubuntu1` is installed. The native OpenCV probe loaded the Java binding and decoded both supplied PNG fixtures successfully. `./mvnw verify` also passes all 3 automated tests and the packaged Spring Boot backend is executable.
+
+This completes the Linux x64 native-loading portion of M0. A native Linux desktop display/installer check remains separate from WSL verification. Windows 11 x64 packaging is still the next desktop target after the Linux pilot.
