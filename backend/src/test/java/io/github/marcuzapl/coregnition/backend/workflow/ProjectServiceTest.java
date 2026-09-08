@@ -175,6 +175,24 @@ class ProjectServiceTest {
         assertEquals(before, service.listProjects().size());
     }
 
+    @Test
+    void rejectsArchiveWhenAssetChecksumDoesNotMatchBytes() throws Exception {
+        int before = service.listProjects().size();
+        byte[] image = png();
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        try (ZipOutputStream zip = new ZipOutputStream(output)) {
+            zip.putNextEntry(new ZipEntry("manifest.json"));
+            zip.write("{\"project\":{\"id\":\"p\",\"name\":\"Checksum archive\",\"createdAt\":\"now\"},\"assets\":[{\"id\":\"asset\",\"originalName\":\"asset.png\",\"relativePath\":\"assets/asset.png\",\"sha256\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"width\":12,\"height\":8,\"createdAt\":\"now\"}],\"segments\":[],\"annotations\":[]}".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            zip.closeEntry();
+            zip.putNextEntry(new ZipEntry("assets/asset.png"));
+            zip.write(image);
+            zip.closeEntry();
+        }
+
+        assertThrows(IllegalArgumentException.class, () -> service.importArchive(new MockMultipartFile("archive", "checksum.zip", "application/zip", output.toByteArray())));
+        assertEquals(before, service.listProjects().size());
+    }
+
     private static byte[] png() throws Exception {
         BufferedImage image = new BufferedImage(12, 8, BufferedImage.TYPE_4BYTE_ABGR);
         ByteArrayOutputStream output = new ByteArrayOutputStream();

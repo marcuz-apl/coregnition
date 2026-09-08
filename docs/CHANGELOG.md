@@ -37,6 +37,7 @@ v0.0.1 (Planning and architecture baseline)
   - **Export provenance**: Extends CSV rows with the feet unit, current project/well identity, source asset checksum and selected region bounds.
   - **Archive integrity**: Preflights archive content and cross-record references before creating a restored project, preventing partial imports from malformed archives.
   - **Archive interval safety**: Rejects non-finite, overlapping or duplicate-checksum records before restoration begins.
+  - **Archive checksum integrity**: Verifies each archived image byte stream against its manifest SHA-256 before restoration.
   - **Documentation structure**: Keeps the README as a concise entry point and moves operational details into `docs/development-technote.md`.
 
 ### [v0.1.1] — 2026-09-08

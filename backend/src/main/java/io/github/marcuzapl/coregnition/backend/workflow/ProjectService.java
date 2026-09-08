@@ -206,7 +206,7 @@ public class ProjectService {
             if (imageBytes == null) throw new IllegalArgumentException("Project archive is missing an image asset");
             BufferedImage image = javax.imageio.ImageIO.read(new ByteArrayInputStream(imageBytes));
             if (image == null || image.getWidth() != asset.width() || image.getHeight() != asset.height()) throw new IllegalArgumentException("Project archive image metadata does not match its content");
-            if (asset.sha256() == null || !assetChecksums.add(asset.sha256())) throw new IllegalArgumentException("Project archive contains duplicate image checksums");
+            if (asset.sha256() == null || !asset.sha256().matches("(?i)[0-9a-f]{64}") || !asset.sha256().equalsIgnoreCase(sha256(imageBytes)) || !assetChecksums.add(asset.sha256().toLowerCase(Locale.ROOT))) throw new IllegalArgumentException("Project archive contains an invalid or duplicate image checksum");
             decoded.put(asset.id(), image);
         }
         Set<String> segmentIds = new HashSet<>();
@@ -225,6 +225,7 @@ public class ProjectService {
     private static String safeName(String name) { if (name == null || name.isBlank() || Path.of(name).getFileName().toString().equals(".")) throw new IllegalArgumentException("Image filename is required"); return Path.of(name).getFileName().toString(); }
     private static String extension(String name) { int dot = name.lastIndexOf('.'); if (dot < 1 || dot == name.length() - 1) throw new IllegalArgumentException("Image must have a supported extension"); return name.substring(dot + 1).toLowerCase(Locale.ROOT); }
     private static String sha256(Path path) throws IOException { try (InputStream input = Files.newInputStream(path)) { MessageDigest digest = MessageDigest.getInstance("SHA-256"); input.transferTo(new java.security.DigestOutputStream(java.io.OutputStream.nullOutputStream(), digest)); return HexFormat.of().formatHex(digest.digest()); } catch (NoSuchAlgorithmException impossible) { throw new IllegalStateException(impossible); } }
+    private static String sha256(byte[] contents) { try { return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(contents)); } catch (NoSuchAlgorithmException impossible) { throw new IllegalStateException(impossible); } }
     private static String csv(String value) { String safe = value == null ? "" : value; if (!safe.isEmpty() && "=+-@".indexOf(safe.charAt(0)) >= 0) safe = "'" + safe; return "\"" + safe.replace("\"", "\"\"") + "\""; }
     private static String csv(Object value) { return csv(value == null ? null : String.valueOf(value)); }
 
