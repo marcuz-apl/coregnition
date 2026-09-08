@@ -13,12 +13,12 @@ v0.0.1 (Planning and architecture baseline)
         │
         └─► v0.1.1 (Versioning reliability and Linux OpenCV validation)
               │
-              └─► Unreleased (M1 local web manual workflow)
+              └─► v0.3.7+260908k (M1 local web manual workflow)
 ```
 
 ## Milestone Change Log Details
 
-### [Unreleased] — 2026-09-08
+### [v0.3.7+260908k] — 2026-09-08
 **feat: M1 local web manual workflow foundation**
 - **Type**: `feat` / `web-first rollout` / `milestone-level`
 - **Scope**: Java Spring Boot backend, SQLite persistence, project asset storage, image import, depth segments, annotation revisions, CSV export.

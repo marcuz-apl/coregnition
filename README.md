@@ -20,10 +20,9 @@ cd web && npm ci && npm run build
 ## Project documents
 
 - [Product requirements](PRD.md)
-- [Initiative](Initiative_coregnition.md)
 - [Development technote](docs/development-technote.md)
-- [Linux M0 verification](docs/m0-linux-x64.md)
-- [Changelog](CHANGELOG.md)
+- [Linux M0 verification](docs/m0-linux-x64-verification.md)
+- [Changelog](docs/CHANGELOG.md)
 
 ## Architecture
 
