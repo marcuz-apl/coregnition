@@ -12,6 +12,7 @@ M0 is complete for Linux x64. M1 is the active milestone and provides the local 
 4. Record or revise the latest lithology and review state.
 5. Reload the project without losing saved records.
 6. Export CSV or a ZIP archive containing the workspace manifest and image bytes.
+7. Import that archive into a fresh local project, restoring its images, intervals and latest annotations.
 
 There is no trained model, installer or shared deployment yet. Model training remains deferred until a representative labelled dataset and training scope are confirmed.
 
@@ -54,8 +55,9 @@ The initial local fixtures are PNG files. Their verified dimensions are 882 × 1
 - `POST /api/v1/projects/{projectId}/segments/{segmentId}/annotations`
 - `GET /api/v1/projects/{projectId}/export.csv`
 - `GET /api/v1/projects/{projectId}/archive.zip`
+- `POST /api/v1/projects/archive`
 
-The backend validates supported formats, decoded image content, file size, duplicate checksums, non-negative increasing depths, configured lithology labels and review states. Annotation writes are revisions; the workspace returns the latest revision for each segment.
+The backend validates supported formats, decoded image content, file size, duplicate checksums, non-negative increasing depths, configured lithology labels and review states. Annotation writes are revisions; the workspace returns the latest revision for each segment. Archive import accepts the project manifest and expected asset entries only, rejects unsafe or oversized entries, creates fresh local IDs, and restores the current project records.
 
 ## Architecture decisions
 

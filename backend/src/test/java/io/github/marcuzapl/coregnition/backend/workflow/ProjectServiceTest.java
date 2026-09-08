@@ -101,6 +101,23 @@ class ProjectServiceTest {
         }
     }
 
+    @Test
+    void restoresArchiveIntoANewProject() throws Exception {
+        ProjectRecord source = service.createProject("Portable well");
+        AssetRecord asset = service.importAsset(source.id(), new MockMultipartFile("file", "portable.png", "image/png", png()));
+        SegmentRecord segment = service.createSegment(source.id(), new CreateSegmentRequest(asset.id(), 7.0, 8.5, "BOTTOM_TO_TOP"));
+        service.annotate(source.id(), segment.id(), new CreateAnnotationRequest("carbonaceous shale", "REVIEWED"));
+
+        ProjectWorkspace restored = service.importArchive(new MockMultipartFile("archive", "portable-project.zip", "application/zip", service.exportArchive(source.id())));
+
+        assertEquals("Portable well", restored.project().name());
+        assertEquals(1, restored.assets().size());
+        assertEquals(1, restored.segments().size());
+        assertEquals(7.0, restored.segments().getFirst().startDepthFeet());
+        assertEquals("carbonaceous shale", restored.annotations().getFirst().label());
+        assertTrue(Files.isRegularFile(service.assetPath(restored.project().id(), restored.assets().getFirst().id())));
+    }
+
     private static byte[] png() throws Exception {
         BufferedImage image = new BufferedImage(12, 8, BufferedImage.TYPE_4BYTE_ABGR);
         ByteArrayOutputStream output = new ByteArrayOutputStream();

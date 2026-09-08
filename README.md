@@ -1,6 +1,6 @@
 # Coregnition
 
-Coregnition is a local-first geological core-image workspace. The web client is the first usable product; a JavaFX desktop client will follow. The current M1 workflow supports project creation, image import, depth calibration in feet, manual lithology annotation, project reload, CSV export and portable ZIP export.
+Coregnition is a local-first geological core-image workspace. The web client is the first usable product; a JavaFX desktop client will follow. The current M1 workflow supports project creation, image import, depth calibration in feet, manual lithology annotation, project reload, CSV export, and portable ZIP export/import.
 
 ## Run locally
 

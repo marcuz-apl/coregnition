@@ -15,9 +15,14 @@ import java.util.HexFormat;
 import java.util.Locale;
 import java.util.Set;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.io.ByteArrayOutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+import java.util.zip.ZipInputStream;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
@@ -29,6 +34,8 @@ public class ProjectService {
     private static final Set<String> SUPPORTED = Set.of("png", "jpg", "jpeg", "tif", "tiff");
     private static final Set<String> LABELS = Set.of("limestone", "dolostone", "carbonaceous shale", "unknown", "mixed", "unassessable");
     private static final Set<String> REVIEW_STATES = Set.of("UNREVIEWED", "REVIEWED");
+    private static final long MAX_ARCHIVE_SIZE = 300_000_000L;
+    private static final int MAX_ARCHIVE_ENTRIES = 102;
     private final ProjectStore store;
     private final Path storageRoot;
     private final ObjectMapper mapper;
@@ -68,6 +75,48 @@ public class ProjectService {
             }
         }
         return output.toByteArray();
+    }
+
+    public ProjectWorkspace importArchive(MultipartFile archive) throws IOException {
+        if (archive == null || archive.isEmpty() || archive.getSize() > MAX_ARCHIVE_SIZE) throw new IllegalArgumentException("Project archive must be non-empty and at most 300 MB");
+        Map<String, byte[]> entries = new HashMap<>();
+        try (ZipInputStream zip = new ZipInputStream(archive.getInputStream())) {
+            ZipEntry entry;
+            while ((entry = zip.getNextEntry()) != null) {
+                if (entry.isDirectory()) continue;
+                String name = entry.getName();
+                if ((!name.equals("manifest.json") && !name.startsWith("assets/")) || name.contains("..") || entries.size() >= MAX_ARCHIVE_ENTRIES) throw new IllegalArgumentException("Project archive has an invalid entry");
+                byte[] contents = readArchiveEntry(zip, name.equals("manifest.json") ? 1_000_000 : 100_000_000);
+                if (entries.putIfAbsent(name, contents) != null) throw new IllegalArgumentException("Project archive contains duplicate entries");
+            }
+        }
+        byte[] manifest = entries.get("manifest.json");
+        if (manifest == null) throw new IllegalArgumentException("Project archive is missing its manifest");
+        ProjectWorkspace source;
+        try { source = mapper.readValue(manifest, ProjectWorkspace.class); }
+        catch (Exception exception) { throw new IllegalArgumentException("Project archive manifest is invalid", exception); }
+        if (source.project() == null || source.project().name() == null || source.assets() == null || source.segments() == null || source.annotations() == null) throw new IllegalArgumentException("Project archive manifest is incomplete");
+
+        ProjectRecord restored = createProject(source.project().name());
+        Map<String, AssetRecord> assets = new HashMap<>();
+        for (AssetRecord sourceAsset : source.assets()) {
+            String archiveName = "assets/" + sourceAsset.id() + "." + extension(sourceAsset.originalName());
+            byte[] image = entries.get(archiveName);
+            if (image == null) throw new IllegalArgumentException("Project archive is missing an image asset");
+            assets.put(sourceAsset.id(), importAsset(restored.id(), new InMemoryUpload(sourceAsset.originalName(), image)));
+        }
+        Map<String, SegmentRecord> segments = new HashMap<>();
+        for (SegmentRecord sourceSegment : source.segments()) {
+            AssetRecord restoredAsset = assets.get(sourceSegment.assetId());
+            if (restoredAsset == null) throw new IllegalArgumentException("Project archive has a segment with no image asset");
+            segments.put(sourceSegment.id(), createSegment(restored.id(), new CreateSegmentRequest(restoredAsset.id(), sourceSegment.startDepthFeet(), sourceSegment.endDepthFeet(), sourceSegment.orientation())));
+        }
+        for (AnnotationRecord sourceAnnotation : source.annotations()) {
+            SegmentRecord restoredSegment = segments.get(sourceAnnotation.segmentId());
+            if (restoredSegment == null) throw new IllegalArgumentException("Project archive has an annotation with no segment");
+            annotate(restored.id(), restoredSegment.id(), new CreateAnnotationRequest(sourceAnnotation.label(), sourceAnnotation.reviewState()));
+        }
+        return workspace(restored.id());
     }
 
     public AssetRecord importAsset(String projectId, MultipartFile upload) throws IOException {
@@ -137,4 +186,28 @@ public class ProjectService {
     private static String extension(String name) { int dot = name.lastIndexOf('.'); if (dot < 1 || dot == name.length() - 1) throw new IllegalArgumentException("Image must have a supported extension"); return name.substring(dot + 1).toLowerCase(Locale.ROOT); }
     private static String sha256(Path path) throws IOException { try (InputStream input = Files.newInputStream(path)) { MessageDigest digest = MessageDigest.getInstance("SHA-256"); input.transferTo(new java.security.DigestOutputStream(java.io.OutputStream.nullOutputStream(), digest)); return HexFormat.of().formatHex(digest.digest()); } catch (NoSuchAlgorithmException impossible) { throw new IllegalStateException(impossible); } }
     private static String csv(String value) { String safe = value == null ? "" : value; if (!safe.isEmpty() && "=+-@".indexOf(safe.charAt(0)) >= 0) safe = "'" + safe; return "\"" + safe.replace("\"", "\"\"") + "\""; }
+
+    private static byte[] readArchiveEntry(ZipInputStream input, int limit) throws IOException {
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        byte[] buffer = new byte[8192];
+        int total = 0;
+        int read;
+        while ((read = input.read(buffer)) >= 0) {
+            total += read;
+            if (total > limit) throw new IllegalArgumentException("Project archive entry is too large");
+            output.write(buffer, 0, read);
+        }
+        return output.toByteArray();
+    }
+
+    private record InMemoryUpload(String originalName, byte[] contents) implements MultipartFile {
+        @Override public String getName() { return "file"; }
+        @Override public String getOriginalFilename() { return originalName; }
+        @Override public String getContentType() { return null; }
+        @Override public boolean isEmpty() { return contents.length == 0; }
+        @Override public long getSize() { return contents.length; }
+        @Override public byte[] getBytes() { return contents.clone(); }
+        @Override public InputStream getInputStream() { return new ByteArrayInputStream(contents); }
+        @Override public void transferTo(File destination) throws IOException { Files.write(destination.toPath(), contents); }
+    }
 }

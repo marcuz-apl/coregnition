@@ -36,6 +36,9 @@ public class ProjectController {
     @GetMapping("/{projectId}")
     ProjectWorkspace workspace(@PathVariable("projectId") String projectId) { return service.workspace(projectId); }
 
+    @PostMapping("/archive")
+    ProjectWorkspace importArchive(@RequestPart("file") MultipartFile file) throws Exception { return service.importArchive(file); }
+
     @PostMapping("/{projectId}/assets")
     AssetRecord importAsset(@PathVariable("projectId") String projectId, @RequestPart("file") MultipartFile file) throws Exception { return service.importAsset(projectId, file); }
 

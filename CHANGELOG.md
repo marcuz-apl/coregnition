@@ -29,6 +29,7 @@ v0.0.1 (Planning and architecture baseline)
   - **Usable first pass**: Adds a guided project workspace with progress rail, image preview and metadata, depth validation, clear loading/error states, reset workflow and responsive styling.
   - **Reloadable review state**: Project workspaces now restore imported images, saved intervals and each interval's latest lithology/review annotation.
   - **Portable export**: Adds a self-contained ZIP archive download with the workspace manifest and imported image bytes alongside the existing CSV export.
+  - **Portable restore**: Imports a project ZIP into a new local project, restoring image assets, calibrated intervals and latest annotation state.
   - **Documentation structure**: Keeps the README as a concise entry point and moves operational details into `docs/development-technote.md`.
 
 ### [v0.1.1] — 2026-09-08
