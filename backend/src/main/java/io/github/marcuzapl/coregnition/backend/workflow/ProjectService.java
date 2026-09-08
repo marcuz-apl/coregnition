@@ -83,6 +83,7 @@ public class ProjectService {
     public ProjectWorkspace importArchive(MultipartFile archive) throws IOException {
         if (archive == null || archive.isEmpty() || archive.getSize() > MAX_ARCHIVE_SIZE) throw new IllegalArgumentException("Project archive must be non-empty and at most 300 MB");
         Map<String, byte[]> entries = new HashMap<>();
+        long totalUncompressed = 0;
         try (ZipInputStream zip = new ZipInputStream(archive.getInputStream())) {
             ZipEntry entry;
             while ((entry = zip.getNextEntry()) != null) {
@@ -90,6 +91,8 @@ public class ProjectService {
                 String name = entry.getName();
                 if ((!name.equals("manifest.json") && !name.startsWith("assets/")) || name.contains("..") || entries.size() >= MAX_ARCHIVE_ENTRIES) throw new IllegalArgumentException("Project archive has an invalid entry");
                 byte[] contents = readArchiveEntry(zip, name.equals("manifest.json") ? 1_000_000 : 100_000_000);
+                totalUncompressed += contents.length;
+                if (totalUncompressed > MAX_ARCHIVE_SIZE) throw new IllegalArgumentException("Project archive expands beyond the 300 MB safety limit");
                 if (entries.putIfAbsent(name, contents) != null) throw new IllegalArgumentException("Project archive contains duplicate entries");
             }
         }
