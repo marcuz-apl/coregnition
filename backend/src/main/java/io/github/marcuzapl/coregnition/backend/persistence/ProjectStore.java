@@ -104,12 +104,12 @@ public class ProjectStore {
     }
 
     public List<SegmentExportRow> exportRows(String projectId) {
-        return jdbc.query("SELECT s.id,s.asset_id,a.original_name,s.start_depth_feet,s.end_depth_feet,s.orientation,COALESCE(r.label,''),COALESCE(r.review_state,'UNREVIEWED') FROM segments s JOIN assets a ON a.id=s.asset_id LEFT JOIN annotations r ON r.segment_id=s.id AND r.revision=(SELECT MAX(r2.revision) FROM annotations r2 WHERE r2.segment_id=s.id) WHERE s.project_id=? ORDER BY s.start_depth_feet,s.end_depth_feet", (rs, row) -> new SegmentExportRow(rs.getString(1), rs.getString(2), rs.getString(3), rs.getDouble(4), rs.getDouble(5), rs.getString(6), rs.getString(7), rs.getString(8)), projectId);
+        return jdbc.query("SELECT s.id,s.asset_id,a.original_name,a.sha256,s.start_depth_feet,s.end_depth_feet,s.orientation,s.region_x,s.region_y,s.region_width,s.region_height,COALESCE(r.label,''),COALESCE(r.review_state,'UNREVIEWED') FROM segments s JOIN assets a ON a.id=s.asset_id LEFT JOIN annotations r ON r.segment_id=s.id AND r.revision=(SELECT MAX(r2.revision) FROM annotations r2 WHERE r2.segment_id=s.id) WHERE s.project_id=? ORDER BY s.start_depth_feet,s.end_depth_feet", (rs, row) -> new SegmentExportRow(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getDouble(5), rs.getDouble(6), rs.getString(7), (Integer) rs.getObject(8), (Integer) rs.getObject(9), (Integer) rs.getObject(10), (Integer) rs.getObject(11), rs.getString(12), rs.getString(13)), projectId);
     }
 
     private ProjectRecord projectRow(ResultSet rs, int row) throws java.sql.SQLException { return new ProjectRecord(rs.getString(1), rs.getString(2), rs.getString(3)); }
     private AssetRecord assetRow(ResultSet rs, int row) throws java.sql.SQLException { return new AssetRecord(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5), rs.getInt(6), rs.getInt(7), (Integer) rs.getObject(8), (Integer) rs.getObject(9), rs.getString(10)); }
     private SegmentRecord segmentRow(ResultSet rs) throws java.sql.SQLException { return new SegmentRecord(rs.getString(1), rs.getString(2), rs.getString(3), rs.getDouble(4), rs.getDouble(5), rs.getString(6), rs.getString(7), (Integer) rs.getObject(8), (Integer) rs.getObject(9), (Integer) rs.getObject(10), (Integer) rs.getObject(11)); }
 
-    public record SegmentExportRow(String id, String assetId, String originalName, double startFeet, double endFeet, String orientation, String label, String reviewState) {}
+    public record SegmentExportRow(String id, String assetId, String originalName, String assetSha256, double startFeet, double endFeet, String orientation, Integer regionX, Integer regionY, Integer regionWidth, Integer regionHeight, String label, String reviewState) {}
 }

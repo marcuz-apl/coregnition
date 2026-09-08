@@ -51,11 +51,14 @@ class ProjectServiceTest {
         assertTrue(Files.isRegularFile(service.assetPath(project.id(), asset.id())));
         assertThrows(DuplicateKeyException.class, () -> service.importAsset(project.id(), upload));
 
-        SegmentRecord segment = service.createSegment(project.id(), new CreateSegmentRequest(asset.id(), 10.0, 12.5, "TOP_TO_BOTTOM"));
+        SegmentRecord segment = service.createSegment(project.id(), new CreateSegmentRequest(asset.id(), 10.0, 12.5, "TOP_TO_BOTTOM", 2, 1, 7, 5));
         AnnotationRecord annotation = service.annotate(project.id(), segment.id(), new CreateAnnotationRequest("carbonaceous shale", "REVIEWED"));
 
         assertEquals(1, annotation.revision());
-        assertTrue(service.exportCsv(project.id()).contains("10.0,12.5,\"TOP_TO_BOTTOM\",\"carbonaceous shale\",\"REVIEWED\""));
+        String export = service.exportCsv(project.id());
+        assertTrue(export.contains("10.0,12.5,\"TOP_TO_BOTTOM\",\"carbonaceous shale\",\"REVIEWED\""));
+        assertTrue(export.startsWith("segment_id,asset_id,original_name,start_depth_feet,end_depth_feet,orientation,label,review_state,depth_unit,well_name,asset_sha256,region_x,region_y,region_width,region_height"));
+        assertTrue(export.contains(",\"feet\",\"Pilot well\",\"" + asset.sha256() + "\",\"2\",\"1\",\"7\",\"5\""));
     }
 
     @Test

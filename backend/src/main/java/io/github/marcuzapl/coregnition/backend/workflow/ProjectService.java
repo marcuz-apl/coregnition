@@ -184,9 +184,9 @@ public class ProjectService {
     }
 
     public String exportCsv(String projectId) {
-        requireProject(projectId);
-        StringBuilder csv = new StringBuilder("segment_id,asset_id,original_name,start_depth_feet,end_depth_feet,orientation,label,review_state\n");
-        for (ProjectStore.SegmentExportRow row : store.exportRows(projectId)) csv.append(csv(row.id())).append(',').append(csv(row.assetId())).append(',').append(csv(row.originalName())).append(',').append(row.startFeet()).append(',').append(row.endFeet()).append(',').append(csv(row.orientation())).append(',').append(csv(row.label())).append(',').append(csv(row.reviewState())).append('\n');
+        ProjectRecord project = store.project(projectId).orElseThrow(() -> new ProjectNotFoundException(projectId));
+        StringBuilder csv = new StringBuilder("segment_id,asset_id,original_name,start_depth_feet,end_depth_feet,orientation,label,review_state,depth_unit,well_name,asset_sha256,region_x,region_y,region_width,region_height\n");
+        for (ProjectStore.SegmentExportRow row : store.exportRows(projectId)) csv.append(csv(row.id())).append(',').append(csv(row.assetId())).append(',').append(csv(row.originalName())).append(',').append(row.startFeet()).append(',').append(row.endFeet()).append(',').append(csv(row.orientation())).append(',').append(csv(row.label())).append(',').append(csv(row.reviewState())).append(',').append(csv("feet")).append(',').append(csv(project.name())).append(',').append(csv(row.assetSha256())).append(',').append(csv(row.regionX())).append(',').append(csv(row.regionY())).append(',').append(csv(row.regionWidth())).append(',').append(csv(row.regionHeight())).append('\n');
         return csv.toString();
     }
 
@@ -196,6 +196,7 @@ public class ProjectService {
     private static String extension(String name) { int dot = name.lastIndexOf('.'); if (dot < 1 || dot == name.length() - 1) throw new IllegalArgumentException("Image must have a supported extension"); return name.substring(dot + 1).toLowerCase(Locale.ROOT); }
     private static String sha256(Path path) throws IOException { try (InputStream input = Files.newInputStream(path)) { MessageDigest digest = MessageDigest.getInstance("SHA-256"); input.transferTo(new java.security.DigestOutputStream(java.io.OutputStream.nullOutputStream(), digest)); return HexFormat.of().formatHex(digest.digest()); } catch (NoSuchAlgorithmException impossible) { throw new IllegalStateException(impossible); } }
     private static String csv(String value) { String safe = value == null ? "" : value; if (!safe.isEmpty() && "=+-@".indexOf(safe.charAt(0)) >= 0) safe = "'" + safe; return "\"" + safe.replace("\"", "\"\"") + "\""; }
+    private static String csv(Object value) { return csv(value == null ? null : String.valueOf(value)); }
 
     private static byte[] readArchiveEntry(ZipInputStream input, int limit) throws IOException {
         ByteArrayOutputStream output = new ByteArrayOutputStream();

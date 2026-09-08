@@ -34,6 +34,7 @@ v0.0.1 (Planning and architecture baseline)
   - **Annotation revisions**: Adds an explicit undo action that restores the prior saved description or clears the initial one.
   - **Image inspection**: Replaces the static preview with zoom, pan, rotation and reset controls while preserving the original imported asset.
   - **Source regions**: Persists selected image regions as validated source-pixel bounds on calibrated segments and restores them with the project.
+  - **Export provenance**: Extends CSV rows with the feet unit, current project/well identity, source asset checksum and selected region bounds.
   - **Documentation structure**: Keeps the README as a concise entry point and moves operational details into `docs/development-technote.md`.
 
 ### [v0.1.1] — 2026-09-08
