@@ -25,7 +25,8 @@ public class ProjectStore {
         jdbc.execute("PRAGMA foreign_keys = ON");
         jdbc.execute("CREATE TABLE IF NOT EXISTS projects (id TEXT PRIMARY KEY, name TEXT NOT NULL, created_at TEXT NOT NULL)");
         jdbc.execute("CREATE TABLE IF NOT EXISTS assets (id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id), original_name TEXT NOT NULL, relative_path TEXT NOT NULL, sha256 TEXT NOT NULL, width INTEGER NOT NULL, height INTEGER NOT NULL, bit_depth INTEGER, color_type INTEGER, created_at TEXT NOT NULL, UNIQUE(project_id, sha256))");
-        jdbc.execute("CREATE TABLE IF NOT EXISTS segments (id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id), asset_id TEXT NOT NULL REFERENCES assets(id), start_depth_feet REAL NOT NULL, end_depth_feet REAL NOT NULL, orientation TEXT NOT NULL, created_at TEXT NOT NULL, CHECK(start_depth_feet < end_depth_feet))");
+        jdbc.execute("CREATE TABLE IF NOT EXISTS segments (id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id), asset_id TEXT NOT NULL REFERENCES assets(id), start_depth_feet REAL NOT NULL, end_depth_feet REAL NOT NULL, orientation TEXT NOT NULL, region_x INTEGER, region_y INTEGER, region_width INTEGER, region_height INTEGER, created_at TEXT NOT NULL, CHECK(start_depth_feet < end_depth_feet))");
+        for (String column : List.of("region_x", "region_y", "region_width", "region_height")) { try { jdbc.execute("ALTER TABLE segments ADD COLUMN " + column + " INTEGER"); } catch (RuntimeException ignored) { } }
         jdbc.execute("CREATE TABLE IF NOT EXISTS annotations (id TEXT PRIMARY KEY, segment_id TEXT NOT NULL REFERENCES segments(id), revision INTEGER NOT NULL, label TEXT NOT NULL, review_state TEXT NOT NULL, created_at TEXT NOT NULL, UNIQUE(segment_id, revision))");
     }
 
@@ -64,7 +65,7 @@ public class ProjectStore {
     }
 
     public List<SegmentRecord> segments(String projectId) {
-        return jdbc.query("SELECT id,project_id,asset_id,start_depth_feet,end_depth_feet,orientation,created_at FROM segments WHERE project_id=? ORDER BY start_depth_feet,end_depth_feet", (rs, row) -> new SegmentRecord(rs.getString(1), rs.getString(2), rs.getString(3), rs.getDouble(4), rs.getDouble(5), rs.getString(6), rs.getString(7)), projectId);
+        return jdbc.query("SELECT id,project_id,asset_id,start_depth_feet,end_depth_feet,orientation,created_at,region_x,region_y,region_width,region_height FROM segments WHERE project_id=? ORDER BY start_depth_feet,end_depth_feet", (rs, row) -> segmentRow(rs), projectId);
     }
 
     public boolean hasOverlappingSegment(String projectId, String assetId, double start, double end) {
@@ -77,7 +78,7 @@ public class ProjectStore {
     }
 
     public Optional<SegmentRecord> segment(String projectId, String segmentId) {
-        return jdbc.query("SELECT id,project_id,asset_id,start_depth_feet,end_depth_feet,orientation,created_at FROM segments WHERE project_id=? AND id=?", (rs, row) -> new SegmentRecord(rs.getString(1), rs.getString(2), rs.getString(3), rs.getDouble(4), rs.getDouble(5), rs.getString(6), rs.getString(7)), projectId, segmentId).stream().findFirst();
+        return jdbc.query("SELECT id,project_id,asset_id,start_depth_feet,end_depth_feet,orientation,created_at,region_x,region_y,region_width,region_height FROM segments WHERE project_id=? AND id=?", (rs, row) -> segmentRow(rs), projectId, segmentId).stream().findFirst();
     }
 
     public Optional<AnnotationRecord> undoLatestAnnotation(String segmentId) {
@@ -86,11 +87,11 @@ public class ProjectStore {
         return jdbc.query("SELECT id,segment_id,revision,label,review_state,created_at FROM annotations WHERE segment_id=? ORDER BY revision DESC LIMIT 1", (rs, row) -> new AnnotationRecord(rs.getString(1), rs.getString(2), rs.getInt(3), rs.getString(4), rs.getString(5), rs.getString(6)), segmentId).stream().findFirst();
     }
 
-    public SegmentRecord createSegment(String projectId, String assetId, double start, double end, String orientation) {
+    public SegmentRecord createSegment(String projectId, String assetId, double start, double end, String orientation, Integer regionX, Integer regionY, Integer regionWidth, Integer regionHeight) {
         String id = UUID.randomUUID().toString();
         String created = Instant.now().toString();
-        jdbc.update("INSERT INTO segments(id,project_id,asset_id,start_depth_feet,end_depth_feet,orientation,created_at) VALUES(?,?,?,?,?,?,?)", id, projectId, assetId, start, end, orientation, created);
-        return new SegmentRecord(id, projectId, assetId, start, end, orientation, created);
+        jdbc.update("INSERT INTO segments(id,project_id,asset_id,start_depth_feet,end_depth_feet,orientation,region_x,region_y,region_width,region_height,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)", id, projectId, assetId, start, end, orientation, regionX, regionY, regionWidth, regionHeight, created);
+        return new SegmentRecord(id, projectId, assetId, start, end, orientation, created, regionX, regionY, regionWidth, regionHeight);
     }
 
     public AnnotationRecord annotate(String segmentId, String label, String reviewState) {
@@ -108,6 +109,7 @@ public class ProjectStore {
 
     private ProjectRecord projectRow(ResultSet rs, int row) throws java.sql.SQLException { return new ProjectRecord(rs.getString(1), rs.getString(2), rs.getString(3)); }
     private AssetRecord assetRow(ResultSet rs, int row) throws java.sql.SQLException { return new AssetRecord(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5), rs.getInt(6), rs.getInt(7), (Integer) rs.getObject(8), (Integer) rs.getObject(9), rs.getString(10)); }
+    private SegmentRecord segmentRow(ResultSet rs) throws java.sql.SQLException { return new SegmentRecord(rs.getString(1), rs.getString(2), rs.getString(3), rs.getDouble(4), rs.getDouble(5), rs.getString(6), rs.getString(7), (Integer) rs.getObject(8), (Integer) rs.getObject(9), (Integer) rs.getObject(10), (Integer) rs.getObject(11)); }
 
     public record SegmentExportRow(String id, String assetId, String originalName, double startFeet, double endFeet, String orientation, String label, String reviewState) {}
 }

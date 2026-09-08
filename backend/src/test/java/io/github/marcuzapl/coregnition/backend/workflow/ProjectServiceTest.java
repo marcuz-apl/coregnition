@@ -77,6 +77,20 @@ class ProjectServiceTest {
     }
 
     @Test
+    void persistsSelectedSourcePixelRegion() throws Exception {
+        ProjectRecord project = service.createProject("Region selection");
+        AssetRecord asset = service.importAsset(project.id(), new MockMultipartFile("file", "region.png", "image/png", png()));
+
+        SegmentRecord segment = service.createSegment(project.id(), new CreateSegmentRequest(asset.id(), 20.0, 21.0, "TOP_TO_BOTTOM", 2, 1, 7, 5));
+
+        assertEquals(2, segment.regionX());
+        assertEquals(1, segment.regionY());
+        assertEquals(7, segment.regionWidth());
+        assertEquals(5, segment.regionHeight());
+        assertEquals(2, service.workspace(project.id()).segments().getFirst().regionX());
+    }
+
+    @Test
     void undoingLatestAnnotationRestoresThePreviousRevision() throws Exception {
         ProjectRecord project = service.createProject("Revision undo");
         AssetRecord asset = service.importAsset(project.id(), new MockMultipartFile("file", "revision.png", "image/png", png()));

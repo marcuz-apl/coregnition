@@ -109,7 +109,7 @@ public class ProjectService {
         for (SegmentRecord sourceSegment : source.segments()) {
             AssetRecord restoredAsset = assets.get(sourceSegment.assetId());
             if (restoredAsset == null) throw new IllegalArgumentException("Project archive has a segment with no image asset");
-            segments.put(sourceSegment.id(), createSegment(restored.id(), new CreateSegmentRequest(restoredAsset.id(), sourceSegment.startDepthFeet(), sourceSegment.endDepthFeet(), sourceSegment.orientation())));
+            segments.put(sourceSegment.id(), createSegment(restored.id(), new CreateSegmentRequest(restoredAsset.id(), sourceSegment.startDepthFeet(), sourceSegment.endDepthFeet(), sourceSegment.orientation(), sourceSegment.regionX(), sourceSegment.regionY(), sourceSegment.regionWidth(), sourceSegment.regionHeight())));
         }
         for (AnnotationRecord sourceAnnotation : source.annotations()) {
             SegmentRecord restoredSegment = segments.get(sourceAnnotation.segmentId());
@@ -163,9 +163,11 @@ public class ProjectService {
         requireProject(projectId);
         if (request == null || request.assetId() == null || request.startDepthFeet() == null || request.endDepthFeet() == null || request.orientation() == null || request.orientation().isBlank()) throw new IllegalArgumentException("Asset, depth bounds and orientation are required");
         if (request.startDepthFeet() < 0 || request.endDepthFeet() <= request.startDepthFeet()) throw new IllegalArgumentException("Depths must be non-negative and end depth must be greater than start depth");
-        store.asset(projectId, request.assetId()).orElseThrow(() -> new IllegalArgumentException("Asset not found: " + request.assetId()));
+        AssetRecord asset = store.asset(projectId, request.assetId()).orElseThrow(() -> new IllegalArgumentException("Asset not found: " + request.assetId()));
+        boolean anyRegion = request.regionX() != null || request.regionY() != null || request.regionWidth() != null || request.regionHeight() != null;
+        if (anyRegion && (request.regionX() == null || request.regionY() == null || request.regionWidth() == null || request.regionHeight() == null || request.regionX() < 0 || request.regionY() < 0 || request.regionWidth() <= 0 || request.regionHeight() <= 0 || request.regionX() + request.regionWidth() > asset.width() || request.regionY() + request.regionHeight() > asset.height())) throw new IllegalArgumentException("Selected image region must be inside the source image bounds");
         if (store.hasOverlappingSegment(projectId, request.assetId(), request.startDepthFeet(), request.endDepthFeet())) throw new IllegalArgumentException("Depth interval overlaps an existing interval for this image");
-        return store.createSegment(projectId, request.assetId(), request.startDepthFeet(), request.endDepthFeet(), request.orientation().trim());
+        return store.createSegment(projectId, request.assetId(), request.startDepthFeet(), request.endDepthFeet(), request.orientation().trim(), request.regionX(), request.regionY(), request.regionWidth(), request.regionHeight());
     }
 
     public AnnotationRecord annotate(String projectId, String segmentId, CreateAnnotationRequest request) {

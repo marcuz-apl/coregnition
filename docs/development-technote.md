@@ -59,7 +59,7 @@ The initial local fixtures are PNG files. Their verified dimensions are 882 × 1
 
 The backend validates supported formats, decoded image content, file size, duplicate checksums, non-negative increasing depths, and non-overlapping intervals on the same image. It also validates configured lithology labels and review states. Annotation writes are revisions; the workspace returns the latest revision for each segment. The client can undo the latest saved annotation, returning to the preceding revision or clearing the first saved label. Archive import accepts the project manifest and expected asset entries only, rejects unsafe or oversized entries, creates fresh local IDs, and restores the current project records.
 
-The web image viewer operates on the displayed asset without modifying the stored file. It provides zoom, pan, 90-degree rotation and reset controls; the recorded checksum continues to identify the original import.
+The web image viewer operates on the displayed asset without modifying the stored file. It provides zoom, pan, 90-degree rotation, source-region selection and reset controls; selected regions are stored as source-pixel bounds, while the recorded checksum continues to identify the original import.
 
 ## Architecture decisions
 
