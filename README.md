@@ -75,6 +75,12 @@ After cloning, activate the tracked hooks:
 git config core.hooksPath .githooks
 ```
 
-Use Conventional Commit subjects with `git commit -m`: `feat:` advances the minor version, `fix:`/`perf:` advances the patch, and documentation/maintenance commits advance only the UTC daily build counter. Major changes require explicit owner approval before setting `ALFAZEN_MAJOR_APPROVED=1`. The first versioned commit preserves the initialized identifier. Review `VERSION` after an interrupted commit before retrying.
+Use the tracked commit command for changes that affect SemVer:
+
+```sh
+scripts/alfazen-commit 'feat: describe the user-facing capability'
+```
+
+`feat:` advances the minor version; `fix:` and `perf:` advance the patch. Major changes require explicit owner approval before setting `ALFAZEN_MAJOR_APPROVED=1`. Direct `git commit` remains suitable for documentation and maintenance commits: the active pre-commit hook advances only the UTC daily build counter and the message hook stamps the same identifier. The command is needed because Git message hooks run too late to stage a semantic version change into the same commit reliably.
 
 `data/core-images/.gitignore` preserves the sample directory while excluding its local contents from Git.

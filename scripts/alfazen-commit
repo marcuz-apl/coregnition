@@ -1,0 +1,25 @@
+#!/bin/sh
+set -eu
+
+if [ "$#" -ne 1 ]; then
+  echo "Usage: scripts/alfazen-commit '<Conventional Commit subject>'" >&2
+  exit 2
+fi
+
+ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+cd "$ROOT"
+. .githooks/versionlib.sh
+
+subject=$1
+old=$(read_version)
+validate_identifier "$old"
+bump=$(detect_bump_type "$subject")
+
+if [ "$bump" = major_requires_approval ] && [ "${ALFAZEN_MAJOR_APPROVED:-0}" = 1 ]; then
+  bump=major
+fi
+
+new=$(next_identifier "$old" "$(utc_yymmdd)" "$bump")
+printf '%s\n' "$new" > "$VERSION_FILE"
+git add -- "$VERSION_FILE"
+git -c core.hooksPath=/dev/null commit -m "$new $subject"

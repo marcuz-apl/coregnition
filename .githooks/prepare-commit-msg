@@ -7,20 +7,6 @@ msgfile=$1
 ver=$(read_version) || exit 1
 validate_identifier "$ver"
 
-# Apply semantic changes from the supplied Conventional Commit message.
-subject=$(sed -n '1p' "$msgfile" | sed -E 's/^v[0-9]+\.[0-9]+\.[0-9]+[+][0-9]{6}[0-9a-z] //')
-bump=$(detect_bump_type "$subject")
-if grep -Eq '^BREAKING[ -]CHANGE:' "$msgfile"; then
-  bump=major_requires_approval
-fi
-if [ "$bump" = major_requires_approval ] && [ "${ALFAZEN_MAJOR_APPROVED:-0}" = 1 ]; then
-  bump=major
-fi
-base=$(bump_semver "${ver%+*}" "$bump") || exit 1
-ver="$base+${ver#*+}"
-printf '%s\n' "$ver" > "$VERSION_FILE"
-git add -- "$VERSION_FILE"
-
 tmp=$(mktemp) || exit 1
 awk -v stamp="$ver" '
   !done && $0 !~ /^#/ {
