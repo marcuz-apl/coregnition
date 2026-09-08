@@ -1,8 +1,8 @@
 # Coregnition
 
-Coregnition is a planned web and Java desktop application for geological core-image inspection and machine-assisted lithology description in the oil and gas industry. Geoscientists will map photographs to depth, review suggested lithologies and export traceable interpretations.
+Coregnition is a planned web and Java desktop application for geological core-image inspection and machine-assisted lithology description in the oil and gas industry. The local web app is the first usable product; the Java desktop app follows with feature parity. Geoscientists will map photographs to depth, review suggested lithologies and export traceable interpretations.
 
-**Current status: requirements and architecture proposal only.** There is no runnable application, trained model, dependency manifest or installer yet. Recognition accuracy has not been established.
+**Current status: M1 local web manual workflow in development.** The Java backend, SQLite persistence, image import, depth calibration, annotation API, CSV export and first React client are available. There is no trained model or installer yet; recognition accuracy has not been established.
 
 ## Project documents
 
@@ -55,11 +55,15 @@ PNG headers, chunk checksums and decompressed scanline structure were verified. 
 
 ## Development starting point
 
-Start with PRD milestone M0: validate Linux x64 desktop/backend packaging, OpenCV native loading and decoding of the two supplied PNGs. Build the manual import-to-export workflow and Java desktop feature parity independently of model training. Windows 11 x64 packaging follows the Linux pilot. Shared deployment follows successful local functional testing and deployment-readiness checks.
+M0 is complete for Linux x64. M1 now provides the local web import-to-export workflow against the shared Java backend. Follow with M3 for JavaFX feature parity and offline startup. Windows 11 x64 packaging follows the Linux desktop pilot. Shared deployment follows successful local functional testing and deployment-readiness checks.
 
 Model training is deferred until the project owner supplies a larger dataset and confirms the training scope. The two current images support import/viewer development; they are not an established training or evaluation dataset.
 
-There are no installation or test commands yet. Add reproducible setup, pinned dependencies and verified commands with the first implementation milestone. Keep proprietary photographs and datasets out of source control unless explicitly cleared for that use.
+## Local development
+
+Build and test the Java services with `./mvnw verify`. Build the local web client with `cd web && npm ci && npm run build`. Start the backend with `./mvnw -pl backend spring-boot:run`, then start the browser client in another terminal with `cd web && npm run dev`. The browser client expects the backend at `http://127.0.0.1:8787`.
+
+M1 endpoints create projects, import supported images, serve an imported asset, create feet-calibrated segments, append annotation revisions and export CSV. The default local database is `data/coregnition.db`; project assets are stored below `data/projects/`. Both are ignored by Git. Keep proprietary photographs and datasets out of source control unless explicitly cleared for that use.
 
 ## Working approach
 

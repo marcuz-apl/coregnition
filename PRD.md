@@ -8,7 +8,7 @@ Source: [Initiative_coregnition.md](Initiative_coregnition.md)
 
 ## 1. Purpose and outcomes
 
-Coregnition will help oil and gas geoscientists inspect geological core photographs, annotate depth intervals, and review machine-assisted lithology suggestions. Deliver both a web application and a Java desktop application using a consistent project format and analysis contract.
+Coregnition will help oil and gas geoscientists inspect geological core photographs, annotate depth intervals, and review machine-assisted lithology suggestions. Deliver both a web application and a Java desktop application using a consistent project format and analysis contract. The local web application is the first usable client; the Java desktop edition follows with feature parity after the shared API and manual workflow are stable.
 
 The intended benefit is faster, more consistent core description with traceable expert decisions. Image predictions are interpretations requiring review. OpenCV supplies image-processing tools; it does not by itself supply a trained geological classifier. Recognition feasibility must be demonstrated on representative, expert-labelled data before promising accuracy or time savings.
 
@@ -114,12 +114,12 @@ Validate file signatures, decoded dimensions and archive paths; guard against pa
 | Milestone | Deliverable | Exit condition |
 |---|---|---|
 | M0 — Local foundation | Supplied-image inventory and Linux x64 desktop packaging spike | JavaFX can start and stop the packaged Java backend and load OpenCV native libraries to decode the supplied PNG fixtures on Linux x64. |
-| M1 — Manual workflow | Shared backend, web import/view/calibrate/annotate/export | FR-01–05 and FR-09 pass using representative fixtures; archive restore verified. |
+| M1 — Manual workflow | Shared backend plus local web import/view/calibrate/annotate/export client | FR-01–05 and FR-09 pass using representative fixtures; archive restore verified. |
 | M2 — Assisted interpretation (deferred) | Dataset, expert taxonomy, evaluation protocol, baseline model, persistent jobs and review interface | Owner supplies data and confirms training scope; domain owner accepts evaluation criteria before training; FR-06–08 pass and held-out evaluation meets the protocol or capability stays experimental. |
-| M3 — Desktop pilot | Packaged JavaFX client with equivalent workflow | FR-10 passes, offline startup works and pilot users complete the full workflow. |
+| M3 — Desktop pilot | Packaged JavaFX client with equivalent workflow after the web pilot | FR-10 passes, offline startup works and pilot users complete the full workflow. |
 | M4 — Shared deployment | Authentication, permissions, PostgreSQL if justified, operations | Access isolation and restore checks pass under measured concurrent load. |
 
-Delivery dependencies: M0 → M1 → M3 establishes the local manual workflow and Linux x64 desktop pilot. Windows 11 x64 packaging follows the Linux pilot. M2 is a separate deferred track and does not block manual functionality or M4 shared deployment. M4 follows successful local functional testing plus access-control, concurrency and restore validation; only validated capabilities are shared.
+Delivery dependencies: M0 → M1 establishes the first usable local web product; M3 then establishes JavaFX desktop parity on Linux x64. Windows 11 x64 packaging follows the Linux desktop pilot. M2 is a separate deferred track and does not block manual functionality or M4 shared deployment. M4 follows successful local functional testing plus access-control, concurrency and restore validation; only validated capabilities are shared.
 
 Track review time per metre against a manual baseline, correction rate, unknown rate and export completion during the pilot. Time savings are measured outcomes, not assumed benefits. Facies research receives its own dataset, requirements and acceptance gate after lithology feasibility.
 
