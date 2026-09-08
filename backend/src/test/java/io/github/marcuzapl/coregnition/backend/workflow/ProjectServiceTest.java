@@ -68,6 +68,15 @@ class ProjectServiceTest {
     }
 
     @Test
+    void rejectsOverlappingIntervalsOnTheSameImage() throws Exception {
+        ProjectRecord project = service.createProject("Overlap validation");
+        AssetRecord asset = service.importAsset(project.id(), new MockMultipartFile("file", "overlap.png", "image/png", png()));
+        service.createSegment(project.id(), new CreateSegmentRequest(asset.id(), 10.0, 12.0, "TOP_TO_BOTTOM"));
+
+        assertThrows(IllegalArgumentException.class, () -> service.createSegment(project.id(), new CreateSegmentRequest(asset.id(), 11.0, 13.0, "TOP_TO_BOTTOM")));
+    }
+
+    @Test
     void listsProjectsAndReloadsWorkspaceRecords() throws Exception {
         ProjectRecord project = service.createProject("Reloadable well");
         AssetRecord asset = service.importAsset(project.id(), new MockMultipartFile("file", "reload.png", "image/png", png()));

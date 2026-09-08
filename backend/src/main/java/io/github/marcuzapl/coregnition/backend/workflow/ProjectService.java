@@ -164,6 +164,7 @@ public class ProjectService {
         if (request == null || request.assetId() == null || request.startDepthFeet() == null || request.endDepthFeet() == null || request.orientation() == null || request.orientation().isBlank()) throw new IllegalArgumentException("Asset, depth bounds and orientation are required");
         if (request.startDepthFeet() < 0 || request.endDepthFeet() <= request.startDepthFeet()) throw new IllegalArgumentException("Depths must be non-negative and end depth must be greater than start depth");
         store.asset(projectId, request.assetId()).orElseThrow(() -> new IllegalArgumentException("Asset not found: " + request.assetId()));
+        if (store.hasOverlappingSegment(projectId, request.assetId(), request.startDepthFeet(), request.endDepthFeet())) throw new IllegalArgumentException("Depth interval overlaps an existing interval for this image");
         return store.createSegment(projectId, request.assetId(), request.startDepthFeet(), request.endDepthFeet(), request.orientation().trim());
     }
 
