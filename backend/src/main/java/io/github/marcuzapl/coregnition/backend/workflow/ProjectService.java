@@ -197,6 +197,7 @@ public class ProjectService {
     private void requireProject(String id) { if (id == null || store.project(id).isEmpty()) throw new ProjectNotFoundException(id); }
     private void validateArchiveSource(ProjectWorkspace source, Map<String, byte[]> entries) throws IOException {
         Set<String> assetIds = new HashSet<>();
+        Set<String> assetChecksums = new HashSet<>();
         Map<String, BufferedImage> decoded = new HashMap<>();
         for (AssetRecord asset : source.assets()) {
             if (asset == null || asset.id() == null || !assetIds.add(asset.id()) || asset.originalName() == null) throw new IllegalArgumentException("Project archive has an invalid image asset");
@@ -205,14 +206,16 @@ public class ProjectService {
             if (imageBytes == null) throw new IllegalArgumentException("Project archive is missing an image asset");
             BufferedImage image = javax.imageio.ImageIO.read(new ByteArrayInputStream(imageBytes));
             if (image == null || image.getWidth() != asset.width() || image.getHeight() != asset.height()) throw new IllegalArgumentException("Project archive image metadata does not match its content");
+            if (asset.sha256() == null || !assetChecksums.add(asset.sha256())) throw new IllegalArgumentException("Project archive contains duplicate image checksums");
             decoded.put(asset.id(), image);
         }
         Set<String> segmentIds = new HashSet<>();
         for (SegmentRecord segment : source.segments()) {
-            if (segment == null || segment.id() == null || !segmentIds.add(segment.id()) || !assetIds.contains(segment.assetId()) || segment.startDepthFeet() < 0 || segment.endDepthFeet() <= segment.startDepthFeet() || segment.orientation() == null || segment.orientation().isBlank()) throw new IllegalArgumentException("Project archive has an invalid depth segment");
+            if (segment == null || segment.id() == null || !segmentIds.add(segment.id()) || !assetIds.contains(segment.assetId()) || !Double.isFinite(segment.startDepthFeet()) || !Double.isFinite(segment.endDepthFeet()) || segment.startDepthFeet() < 0 || segment.endDepthFeet() <= segment.startDepthFeet() || segment.orientation() == null || segment.orientation().isBlank()) throw new IllegalArgumentException("Project archive has an invalid depth segment");
             boolean anyRegion = segment.regionX() != null || segment.regionY() != null || segment.regionWidth() != null || segment.regionHeight() != null;
             BufferedImage image = decoded.get(segment.assetId());
             if (anyRegion && (segment.regionX() == null || segment.regionY() == null || segment.regionWidth() == null || segment.regionHeight() == null || segment.regionX() < 0 || segment.regionY() < 0 || segment.regionWidth() <= 0 || segment.regionHeight() <= 0 || segment.regionX() + segment.regionWidth() > image.getWidth() || segment.regionY() + segment.regionHeight() > image.getHeight())) throw new IllegalArgumentException("Project archive has an invalid source image region");
+            for (SegmentRecord prior : source.segments()) if (prior != null && prior != segment && segment.assetId().equals(prior.assetId()) && prior.startDepthFeet() < segment.endDepthFeet() && prior.endDepthFeet() > segment.startDepthFeet()) throw new IllegalArgumentException("Project archive contains overlapping depth intervals");
         }
         for (AnnotationRecord annotation : source.annotations()) {
             if (annotation == null || annotation.segmentId() == null || !segmentIds.contains(annotation.segmentId()) || annotation.label() == null || !LABELS.contains(annotation.label().toLowerCase(Locale.ROOT)) || annotation.reviewState() == null || !REVIEW_STATES.contains(annotation.reviewState().toUpperCase(Locale.ROOT))) throw new IllegalArgumentException("Project archive has an invalid annotation");
