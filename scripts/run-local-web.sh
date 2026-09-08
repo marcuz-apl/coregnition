@@ -8,6 +8,10 @@ if [ ! -f backend/target/coregnition-backend-0.0.1-SNAPSHOT.jar ]; then
   ./mvnw --batch-mode --no-transfer-progress package -DskipTests
 fi
 
+if [ ! -f web/node_modules/vite/bin/vite.js ]; then
+  npm --prefix web ci
+fi
+
 java -jar backend/target/coregnition-backend-0.0.1-SNAPSHOT.jar >/tmp/coregnition-backend.log 2>&1 &
 backend_pid=$!
 (cd web && exec node node_modules/vite/bin/vite.js --host 0.0.0.0) >/tmp/coregnition-vite.log 2>&1 &
