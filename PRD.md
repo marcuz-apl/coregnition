@@ -131,19 +131,12 @@ Track review time per metre against a manual baseline, correction rate, unknown 
 - Next desktop packaging target: Windows 11 x64, after the Linux pilot.
 - Architecture: JavaFX desktop, React web and Java backend.
 - Depth unit: feet.
-- Image availability: two supplied PNG photographs in `data/core-images/`; inspected inventory below.
+- Image availability: two supplied PNG photographs are available locally; their inspected inventory is recorded in the development technote.
 - Usage rights: the project owner confirms rights to use the supplied images.
 - Web rollout: local first; shared use after functional tests pass and shared-deployment readiness checks succeed.
 - Model training: deferred until the owner has a larger dataset available and confirms training requirements. Dataset collection does not block the manual workflow.
 
-### Supplied image inventory
-
-| File | Width × height (pixels) | File size | Format |
-|---|---|---|---|
-| Supplied core image A | 882 × 1595 | 2,136,395 bytes (2.04 MiB) | PNG, 8-bit RGBA |
-| Supplied core image B | 890 × 1611 | 2,234,750 bytes (2.13 MiB) | PNG, 8-bit RGBA |
-
-Inspection verified PNG signatures, IHDR dimensions, chunk checksums and decompressed scanline structure. Both files include an alpha channel. These dimensions describe the supplied examples, not the full future dataset or production import limits. OpenCV decoding and rendered appearance remain implementation checks.
+Inspection verified the supplied PNG signatures, IHDR dimensions, chunk checksums and decompressed scanline structure. The measurements describe the supplied examples, not the full future dataset or production import limits. OpenCV decoding and rendered appearance remain implementation checks; the detailed inventory is in `docs/development-technote.md`.
 
 ### Remaining inputs when relevant
 
