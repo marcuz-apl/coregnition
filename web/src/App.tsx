@@ -1,6 +1,6 @@
 import { ChangeEvent, FormEvent, useState } from "react";
 
-const API = "http://127.0.0.1:8787/api/v1";
+const API = "/api/v1";
 const labels = ["limestone", "dolostone", "carbonaceous shale", "unknown", "mixed", "unassessable"];
 
 type Project = { id: string; name: string };
