@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/projects")
@@ -28,6 +29,12 @@ public class ProjectController {
 
     @PostMapping
     ProjectRecord create(@RequestBody CreateProjectRequest request) throws Exception { return service.createProject(request == null ? null : request.name()); }
+
+    @GetMapping
+    List<ProjectRecord> projects() { return service.listProjects(); }
+
+    @GetMapping("/{projectId}")
+    ProjectWorkspace workspace(@PathVariable("projectId") String projectId) { return service.workspace(projectId); }
 
     @PostMapping("/{projectId}/assets")
     AssetRecord importAsset(@PathVariable("projectId") String projectId, @RequestPart("file") MultipartFile file) throws Exception { return service.importAsset(projectId, file); }

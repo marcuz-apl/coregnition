@@ -61,11 +61,11 @@ Model training is deferred until the project owner supplies a larger dataset and
 
 ## Local development
 
-Build and test the Java services with `./mvnw verify`. Build the local web client with `cd web && npm ci && npm run build`. Start the backend with `./mvnw -pl backend spring-boot:run`, then start the browser client in another terminal with `cd web && npm run dev`. Both processes must remain running while you use the app. The browser client expects the backend at `http://127.0.0.1:8787`.
+Build and test the Java services with `./mvnw verify`. Build the local web client with `cd web && npm ci && npm run build`. Start the backend with `./mvnw -pl backend spring-boot:run`, then start the browser client in another terminal with `cd web && npm run dev`. Both processes must remain running while you use the app. The browser client expects the backend at `http://127.0.0.1:3041`.
 
 For a single-terminal WSL launch, run `./scripts/run-local-web.sh` from the repository root. It starts both services, keeps them alive, binds the web server to all WSL interfaces, and stops both when you press Ctrl-C.
 
-M1 endpoints create projects, import supported images, serve an imported asset, create feet-calibrated segments, append annotation revisions and export CSV. The browser client runs on port `3040` and proxies `/api` to the local backend on port `8787`, so a Windows browser only needs access to port `3040`. The default local database is `data/coregnition.db`; project assets are stored below `data/projects/`. Both are ignored by Git. Keep proprietary photographs and datasets out of source control unless explicitly cleared for that use.
+M1 endpoints create projects, import supported images, serve an imported asset, create feet-calibrated segments, append annotation revisions and export CSV. The browser client runs on port `3040` and proxies `/api` to the local backend on port `3041`, so a Windows browser only needs access to port `3040`. The default local database is `data/coregnition.db`; project assets are stored below `data/projects/`. Both are ignored by Git. Keep proprietary photographs and datasets out of source control unless explicitly cleared for that use.
 
 ## Working approach
 

@@ -40,6 +40,10 @@ public class ProjectStore {
         return jdbc.query("SELECT id,name,created_at FROM projects WHERE id=?", this::projectRow, id).stream().findFirst();
     }
 
+    public List<ProjectRecord> projects() {
+        return jdbc.query("SELECT id,name,created_at FROM projects ORDER BY created_at DESC", this::projectRow);
+    }
+
     public AssetRecord createAsset(String projectId, String originalName, String relativePath, String sha256, int width, int height, Integer bitDepth, Integer colorType) {
         String id = UUID.randomUUID().toString();
         String created = Instant.now().toString();
@@ -53,6 +57,14 @@ public class ProjectStore {
 
     public Optional<AssetRecord> assetBySha(String projectId, String sha256) {
         return jdbc.query("SELECT id,project_id,original_name,relative_path,sha256,width,height,bit_depth,color_type,created_at FROM assets WHERE project_id=? AND sha256=?", this::assetRow, projectId, sha256).stream().findFirst();
+    }
+
+    public List<AssetRecord> assets(String projectId) {
+        return jdbc.query("SELECT id,project_id,original_name,relative_path,sha256,width,height,bit_depth,color_type,created_at FROM assets WHERE project_id=? ORDER BY created_at", this::assetRow, projectId);
+    }
+
+    public List<SegmentRecord> segments(String projectId) {
+        return jdbc.query("SELECT id,project_id,asset_id,start_depth_feet,end_depth_feet,orientation,created_at FROM segments WHERE project_id=? ORDER BY start_depth_feet,end_depth_feet", (rs, row) -> new SegmentRecord(rs.getString(1), rs.getString(2), rs.getString(3), rs.getDouble(4), rs.getDouble(5), rs.getString(6), rs.getString(7)), projectId);
     }
 
     public SegmentRecord createSegment(String projectId, String assetId, double start, double end, String orientation) {

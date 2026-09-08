@@ -25,7 +25,7 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 printf 'Coregnition web app: http://localhost:3040\n'
-printf 'Backend health: http://127.0.0.1:8787/api/v1/health\n'
+printf 'Backend health: http://127.0.0.1:3041/api/v1/health\n'
 printf 'WSL address: run hostname -I if localhost forwarding is unavailable.\n'
 printf 'Press Ctrl-C to stop both services.\n'
 wait "$vite_pid"

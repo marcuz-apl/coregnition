@@ -2,6 +2,8 @@
 
 Coregnition follows the Alfazen connected version format `v<major>.<minor>.<patch>+<YYMMDDc>`.
 
+Routine feature and fix commits advance the patch/build within the active milestone line. Minor versions are reserved for explicit `milestone:` or `release:` commits.
+
 ## Semantic version progression
 
 ```text

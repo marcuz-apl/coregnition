@@ -14,6 +14,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.Locale;
 import java.util.Set;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
@@ -38,6 +39,13 @@ public class ProjectService {
         ProjectRecord project = store.createProject(name.trim());
         Files.createDirectories(projectDirectory(project.id()).resolve("assets"));
         return project;
+    }
+
+    public List<ProjectRecord> listProjects() { return store.projects(); }
+
+    public ProjectWorkspace workspace(String projectId) {
+        ProjectRecord project = store.project(projectId).orElseThrow(() -> new ProjectNotFoundException(projectId));
+        return new ProjectWorkspace(project, store.assets(projectId), store.segments(projectId));
     }
 
     public AssetRecord importAsset(String projectId, MultipartFile upload) throws IOException {

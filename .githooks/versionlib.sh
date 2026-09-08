@@ -25,8 +25,8 @@ detect_bump_type() {
   msg=$1
   case "$msg" in
     *BREAKING\ CHANGE*|*!:\ *) echo "major_requires_approval" ;;
-    feat:*|feat\(*\):*)        echo "minor" ;;
-    fix:*|fix\(*\):*|perf:*)   echo "patch" ;;
+    milestone:*|milestone\(*\):*|release:*|release\(*\):*) echo "minor" ;;
+    feat:*|feat\(*\):*|fix:*|fix\(*\):*|perf:*)             echo "patch" ;;
     *)                         echo "build" ;;
   esac
 }

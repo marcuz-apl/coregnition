@@ -4,6 +4,7 @@
 *.db
 *.db-shm
 *.db-wal
+data/projects/
 web/node_modules/
 web/dist/
 web/*.tsbuildinfo
