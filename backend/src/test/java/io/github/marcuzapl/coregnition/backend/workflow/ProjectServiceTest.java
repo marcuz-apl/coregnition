@@ -9,6 +9,8 @@ import java.io.ByteArrayOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
+import java.util.zip.ZipEntry;
 import java.io.ByteArrayInputStream;
 import javax.imageio.ImageIO;
 import org.junit.jupiter.api.Test;
@@ -157,6 +159,20 @@ class ProjectServiceTest {
         assertEquals(7.0, restored.segments().getFirst().startDepthFeet());
         assertEquals("carbonaceous shale", restored.annotations().getFirst().label());
         assertTrue(Files.isRegularFile(service.assetPath(restored.project().id(), restored.assets().getFirst().id())));
+    }
+
+    @Test
+    void rejectsArchiveBeforeCreatingPartialProject() throws Exception {
+        int before = service.listProjects().size();
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        try (ZipOutputStream zip = new ZipOutputStream(output)) {
+            zip.putNextEntry(new ZipEntry("manifest.json"));
+            zip.write("{\"project\":{\"id\":\"p\",\"name\":\"Invalid archive\",\"createdAt\":\"now\"},\"assets\":[{\"id\":\"missing\",\"originalName\":\"missing.png\",\"relativePath\":\"assets/missing.png\",\"sha256\":\"x\",\"width\":12,\"height\":8,\"createdAt\":\"now\"}],\"segments\":[],\"annotations\":[]}".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            zip.closeEntry();
+        }
+
+        assertThrows(IllegalArgumentException.class, () -> service.importArchive(new MockMultipartFile("archive", "invalid.zip", "application/zip", output.toByteArray())));
+        assertEquals(before, service.listProjects().size());
     }
 
     private static byte[] png() throws Exception {

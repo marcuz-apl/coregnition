@@ -24,6 +24,9 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import java.util.zip.ZipInputStream;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.awt.image.BufferedImage;
+import java.util.HashSet;
+import java.util.Set;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
@@ -96,6 +99,7 @@ public class ProjectService {
         try { source = mapper.readValue(manifest, ProjectWorkspace.class); }
         catch (Exception exception) { throw new IllegalArgumentException("Project archive manifest is invalid", exception); }
         if (source.project() == null || source.project().name() == null || source.assets() == null || source.segments() == null || source.annotations() == null) throw new IllegalArgumentException("Project archive manifest is incomplete");
+        validateArchiveSource(source, entries);
 
         ProjectRecord restored = createProject(source.project().name());
         Map<String, AssetRecord> assets = new HashMap<>();
@@ -191,6 +195,29 @@ public class ProjectService {
     }
 
     private void requireProject(String id) { if (id == null || store.project(id).isEmpty()) throw new ProjectNotFoundException(id); }
+    private void validateArchiveSource(ProjectWorkspace source, Map<String, byte[]> entries) throws IOException {
+        Set<String> assetIds = new HashSet<>();
+        Map<String, BufferedImage> decoded = new HashMap<>();
+        for (AssetRecord asset : source.assets()) {
+            if (asset == null || asset.id() == null || !assetIds.add(asset.id()) || asset.originalName() == null) throw new IllegalArgumentException("Project archive has an invalid image asset");
+            String archiveName = "assets/" + asset.id() + "." + extension(asset.originalName());
+            byte[] imageBytes = entries.get(archiveName);
+            if (imageBytes == null) throw new IllegalArgumentException("Project archive is missing an image asset");
+            BufferedImage image = javax.imageio.ImageIO.read(new ByteArrayInputStream(imageBytes));
+            if (image == null || image.getWidth() != asset.width() || image.getHeight() != asset.height()) throw new IllegalArgumentException("Project archive image metadata does not match its content");
+            decoded.put(asset.id(), image);
+        }
+        Set<String> segmentIds = new HashSet<>();
+        for (SegmentRecord segment : source.segments()) {
+            if (segment == null || segment.id() == null || !segmentIds.add(segment.id()) || !assetIds.contains(segment.assetId()) || segment.startDepthFeet() < 0 || segment.endDepthFeet() <= segment.startDepthFeet() || segment.orientation() == null || segment.orientation().isBlank()) throw new IllegalArgumentException("Project archive has an invalid depth segment");
+            boolean anyRegion = segment.regionX() != null || segment.regionY() != null || segment.regionWidth() != null || segment.regionHeight() != null;
+            BufferedImage image = decoded.get(segment.assetId());
+            if (anyRegion && (segment.regionX() == null || segment.regionY() == null || segment.regionWidth() == null || segment.regionHeight() == null || segment.regionX() < 0 || segment.regionY() < 0 || segment.regionWidth() <= 0 || segment.regionHeight() <= 0 || segment.regionX() + segment.regionWidth() > image.getWidth() || segment.regionY() + segment.regionHeight() > image.getHeight())) throw new IllegalArgumentException("Project archive has an invalid source image region");
+        }
+        for (AnnotationRecord annotation : source.annotations()) {
+            if (annotation == null || annotation.segmentId() == null || !segmentIds.contains(annotation.segmentId()) || annotation.label() == null || !LABELS.contains(annotation.label().toLowerCase(Locale.ROOT)) || annotation.reviewState() == null || !REVIEW_STATES.contains(annotation.reviewState().toUpperCase(Locale.ROOT))) throw new IllegalArgumentException("Project archive has an invalid annotation");
+        }
+    }
     private Path projectDirectory(String id) { return storageRoot.resolve(id).normalize(); }
     private static String safeName(String name) { if (name == null || name.isBlank() || Path.of(name).getFileName().toString().equals(".")) throw new IllegalArgumentException("Image filename is required"); return Path.of(name).getFileName().toString(); }
     private static String extension(String name) { int dot = name.lastIndexOf('.'); if (dot < 1 || dot == name.length() - 1) throw new IllegalArgumentException("Image must have a supported extension"); return name.substring(dot + 1).toLowerCase(Locale.ROOT); }
