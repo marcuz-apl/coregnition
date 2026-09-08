@@ -20,7 +20,7 @@ Sedimentary facies interpretation is a later research track: contextual geologic
 - Reviewing geoscientist: resolves uncertain intervals and approves a description for export.
 - Project owner: manages project files, backups and, in a future shared deployment, access.
 
-Confirmed by the project owner: Windows 11 x64 is the only initial desktop target, initial web use is local, and depth is recorded in feet. Shared web use follows successful functional testing and the shared-deployment readiness gate. Two PNG core photographs are available for initial import/viewer checks, and the owner confirms rights to use them. The initial single-user workflow remains the planning baseline. Linux/macOS support, cloud storage and cross-device synchronization are deferred. Model training is deferred until the owner supplies a larger dataset and confirms the training scope.
+Confirmed by the project owner: Linux x64 is the first desktop target, initial web use is local, and depth is recorded in feet. Windows 11 x64 is the next desktop packaging target after the Linux pilot. Shared web use follows successful functional testing and the shared-deployment readiness gate. Two PNG core photographs are available for initial import/viewer checks, and the owner confirms rights to use them. The initial single-user workflow remains the planning baseline. macOS support, cloud storage and cross-device synchronization are deferred. Model training is deferred until the owner supplies a larger dataset and confirms the training scope.
 
 ## 3. MVP scope and workflow
 
@@ -113,13 +113,13 @@ Validate file signatures, decoded dimensions and archive paths; guard against pa
 
 | Milestone | Deliverable | Exit condition |
 |---|---|---|
-| M0 — Local foundation | Supplied-image inventory and Windows 11 desktop packaging spike | JavaFX can start and stop the packaged Java backend and load OpenCV native libraries to decode the supplied PNG fixtures on Windows 11. |
+| M0 — Local foundation | Supplied-image inventory and Linux x64 desktop packaging spike | JavaFX can start and stop the packaged Java backend and load OpenCV native libraries to decode the supplied PNG fixtures on Linux x64. |
 | M1 — Manual workflow | Shared backend, web import/view/calibrate/annotate/export | FR-01–05 and FR-09 pass using representative fixtures; archive restore verified. |
 | M2 — Assisted interpretation (deferred) | Dataset, expert taxonomy, evaluation protocol, baseline model, persistent jobs and review interface | Owner supplies data and confirms training scope; domain owner accepts evaluation criteria before training; FR-06–08 pass and held-out evaluation meets the protocol or capability stays experimental. |
 | M3 — Desktop pilot | Packaged JavaFX client with equivalent workflow | FR-10 passes, offline startup works and pilot users complete the full workflow. |
 | M4 — Shared deployment | Authentication, permissions, PostgreSQL if justified, operations | Access isolation and restore checks pass under measured concurrent load. |
 
-Delivery dependencies: M0 → M1 → M3 establishes the local manual workflow and Windows 11 desktop pilot. M2 is a separate deferred track and does not block manual functionality or M4 shared deployment. M4 follows successful local functional testing plus access-control, concurrency and restore validation; only validated capabilities are shared.
+Delivery dependencies: M0 → M1 → M3 establishes the local manual workflow and Linux x64 desktop pilot. Windows 11 x64 packaging follows the Linux pilot. M2 is a separate deferred track and does not block manual functionality or M4 shared deployment. M4 follows successful local functional testing plus access-control, concurrency and restore validation; only validated capabilities are shared.
 
 Track review time per metre against a manual baseline, correction rate, unknown rate and export completion during the pilot. Time savings are measured outcomes, not assumed benefits. Facies research receives its own dataset, requirements and acceptance gate after lithology feasibility.
 
@@ -127,7 +127,8 @@ Track review time per metre against a manual baseline, correction rate, unknown 
 
 ### Confirmed by the project owner
 
-- First desktop target: Windows 11 x64 only.
+- First desktop target: Linux x64.
+- Next desktop packaging target: Windows 11 x64, after the Linux pilot.
 - Architecture: JavaFX desktop, React web and Java backend.
 - Depth unit: feet.
 - Image availability: two supplied PNG photographs in `data/core-images/`; inspected inventory below.
@@ -139,8 +140,8 @@ Track review time per metre against a manual baseline, correction rate, unknown 
 
 | File | Width × height (pixels) | File size | Format |
 |---|---|---|---|
-| `B1-LP3D_Core_Picture1.png` | 882 × 1595 | 2,136,395 bytes (2.04 MiB) | PNG, 8-bit RGBA |
-| `B1-LP3D_Core_Picture2.png` | 890 × 1611 | 2,234,750 bytes (2.13 MiB) | PNG, 8-bit RGBA |
+| Supplied core image A | 882 × 1595 | 2,136,395 bytes (2.04 MiB) | PNG, 8-bit RGBA |
+| Supplied core image B | 890 × 1611 | 2,234,750 bytes (2.13 MiB) | PNG, 8-bit RGBA |
 
 Inspection verified PNG signatures, IHDR dimensions, chunk checksums and decompressed scanline structure. Both files include an alpha channel. These dimensions describe the supplied examples, not the full future dataset or production import limits. OpenCV decoding and rendered appearance remain implementation checks.
 

@@ -38,7 +38,7 @@ Predictions remain separate from expert interpretations. Unknown, mixed and unas
 
 ## Deployment and project files
 
-The desktop edition is intended to bundle a local Java Spring Boot backend managed by JavaFX, together with a Java runtime and OpenCV native libraries for the target OS and CPU architecture. The web client uses the same API. The first desktop target is Windows 11 x64 only, and depth is recorded in feet. Initial web use is local; shared use follows successful functional testing and access-control, concurrency and restore validation.
+The desktop edition is intended to bundle a local Java Spring Boot backend managed by JavaFX, together with a Java runtime and OpenCV native libraries for the target OS and CPU architecture. The web client uses the same API. The first desktop target is Linux x64; Windows 11 x64 follows the Linux pilot. Depth is recorded in feet. Initial web use is local; shared use follows successful functional testing and access-control, concurrency and restore validation.
 
 A saved project will contain SQLite metadata, original images, derived assets and a versioned manifest. A database file alone will not contain the full project. Portable archives must use a consistent database snapshot and include referenced assets. Cross-device synchronization is outside the initial scope.
 
@@ -48,14 +48,14 @@ The project owner confirms rights to use these files in `data/core-images/`.
 
 | File | Width × height (pixels) | File size | Format |
 |---|---|---|---|
-| `B1-LP3D_Core_Picture1.png` | 882 × 1595 | 2,136,395 bytes (2.04 MiB) | PNG, 8-bit RGBA |
-| `B1-LP3D_Core_Picture2.png` | 890 × 1611 | 2,234,750 bytes (2.13 MiB) | PNG, 8-bit RGBA |
+| Supplied core image A | 882 × 1595 | 2,136,395 bytes (2.04 MiB) | PNG, 8-bit RGBA |
+| Supplied core image B | 890 × 1611 | 2,234,750 bytes (2.13 MiB) | PNG, 8-bit RGBA |
 
 PNG headers, chunk checksums and decompressed scanline structure were verified. See PRD section 9 for confirmed decisions and remaining inputs.
 
 ## Development starting point
 
-Start with PRD milestone M0: validate Windows 11 desktop/backend packaging, OpenCV native loading and decoding of the two supplied PNGs. Build the manual import-to-export workflow and Java desktop feature parity independently of model training. Shared deployment follows successful local functional testing and deployment-readiness checks.
+Start with PRD milestone M0: validate Linux x64 desktop/backend packaging, OpenCV native loading and decoding of the two supplied PNGs. Build the manual import-to-export workflow and Java desktop feature parity independently of model training. Windows 11 x64 packaging follows the Linux pilot. Shared deployment follows successful local functional testing and deployment-readiness checks.
 
 Model training is deferred until the project owner supplies a larger dataset and confirms the training scope. The two current images support import/viewer development; they are not an established training or evaluation dataset.
 
