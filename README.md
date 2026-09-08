@@ -63,7 +63,7 @@ Model training is deferred until the project owner supplies a larger dataset and
 
 Build and test the Java services with `./mvnw verify`. Build the local web client with `cd web && npm ci && npm run build`. Start the backend with `./mvnw -pl backend spring-boot:run`, then start the browser client in another terminal with `cd web && npm run dev`. The browser client expects the backend at `http://127.0.0.1:8787`.
 
-M1 endpoints create projects, import supported images, serve an imported asset, create feet-calibrated segments, append annotation revisions and export CSV. The default local database is `data/coregnition.db`; project assets are stored below `data/projects/`. Both are ignored by Git. Keep proprietary photographs and datasets out of source control unless explicitly cleared for that use.
+M1 endpoints create projects, import supported images, serve an imported asset, create feet-calibrated segments, append annotation revisions and export CSV. The browser client runs on port `3040`; the local backend remains on port `8787`. The default local database is `data/coregnition.db`; project assets are stored below `data/projects/`. Both are ignored by Git. Keep proprietary photographs and datasets out of source control unless explicitly cleared for that use.
 
 ## Working approach
 
