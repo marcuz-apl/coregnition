@@ -20,15 +20,15 @@ Sedimentary facies interpretation is a later research track: contextual geologic
 - Reviewing geoscientist: resolves uncertain intervals and approves a description for export.
 - Project owner: manages project files, backups and, in a future shared deployment, access.
 
-Confirmed by the project owner: Windows 11 is the first desktop target, and initial web use is local. Shared web use follows successful functional testing and the shared-deployment readiness gate. Two PNG core photographs are available for initial import/viewer checks, and the owner confirms rights to use them. The initial single-user workflow remains the planning baseline. Linux/macOS support, cloud storage and cross-device synchronization are deferred. Model training is deferred until the owner supplies a larger dataset and confirms the training scope.
+Confirmed by the project owner: Windows 11 x64 is the only initial desktop target, initial web use is local, and depth is recorded in feet. Shared web use follows successful functional testing and the shared-deployment readiness gate. Two PNG core photographs are available for initial import/viewer checks, and the owner confirms rights to use them. The initial single-user workflow remains the planning baseline. Linux/macOS support, cloud storage and cross-device synchronization are deferred. Model training is deferred until the owner supplies a larger dataset and confirms the training scope.
 
 ## 3. MVP scope and workflow
 
-1. Create a project and well; choose a depth unit and record image acquisition context when known.
+1. Create a project and well; record depths in feet and capture image acquisition context when known.
 2. Import JPEG, PNG or TIFF photographs. Preserve originals and checksums; reject unsupported, corrupt or oversized input with an actionable explanation. Multi-page TIFF is rejected explicitly in the MVP.
 3. Inspect thumbnails and a zoomable viewer. Rotate the working view, crop core regions and exclude trays, rulers, gaps and labels without modifying the original.
 4. Assign each core segment an orientation and start/end depth. Confirm segment order manually; a multi-row tray must not be treated as one continuous depth axis.
-5. Annotate intervals using a versioned lithology vocabulary. Initial candidate classes are sandstone, shale/mudstone, limestone and dolostone; the pilot geologist must decide which classes the available evidence supports. Include unknown, mixed and unassessable outcomes.
+5. Annotate intervals using a versioned lithology vocabulary. The initial classes are limestone, dolostone and carbonaceous shale, reflecting the currently available cut cores. Include unknown, mixed and unassessable outcomes.
 6. Run a selected, validated model on eligible segments. Show progress and allow cancellation; manual annotation remains available without a model.
 7. Review suggestions alongside original imagery. Accept, edit or reject each interval; retain original predictions separately from expert labels and record author, time and model provenance.
 8. Export depth-indexed CSV and a portable project archive. Export distinguishes provisional predictions from reviewed interpretations.
@@ -42,7 +42,7 @@ Out of scope: autonomous geological sign-off, petrophysical property estimation,
 | FR-01 | Project persistence | Closing and reopening restores wells, assets, segments, annotations and review state. |
 | FR-02 | Safe import | Valid supported fixtures import; corrupt files, decompression limits and invalid paths fail without partially registered assets. Duplicate checksums prompt reuse or explicit duplication. |
 | FR-03 | Image inspection | Zoom, pan, rotation and region selection preserve the original checksum and correctly map overlays back to source pixels. |
-| FR-04 | Depth calibration | Each segment requires increasing depth bounds and a unit; reversed orientation is explicit. Invalid ranges are blocked and overlapping segments require resolution before final export. |
+| FR-04 | Depth calibration | Each segment requires increasing depth bounds in feet; reversed orientation is explicit. Invalid ranges are blocked and overlapping segments require resolution before final export. |
 | FR-05 | Manual description | Users can create, edit and remove interval labels with undo during editing and a persisted revision history after saving. |
 | FR-06 | Analysis jobs | Jobs expose queued, running, succeeded, failed and cancelled states. Failure/cancellation leaves existing reviewed annotations intact; restart identifies interrupted jobs and permits an explicit retry. |
 | FR-07 | Prediction provenance | Results include class scores, unknown/abstention state, model identifier and checksum, preprocessing version, source asset checksum and segment mapping. Scores are not presented as calibrated probabilities unless validated. |
@@ -127,8 +127,9 @@ Track review time per metre against a manual baseline, correction rate, unknown 
 
 ### Confirmed by the project owner
 
-- First desktop OS: Windows 11.
+- First desktop target: Windows 11 x64 only.
 - Architecture: JavaFX desktop, React web and Java backend.
+- Depth unit: feet.
 - Image availability: two supplied PNG photographs in `data/core-images/`; inspected inventory below.
 - Usage rights: the project owner confirms rights to use the supplied images.
 - Web rollout: local first; shared use after functional tests pass and shared-deployment readiness checks succeed.
@@ -145,7 +146,7 @@ Inspection verified PNG signatures, IHDR dimensions, chunk checksums and decompr
 
 ### Remaining inputs when relevant
 
-Confirm Windows 11 CPU architecture before producing installers. Establish depth units and calibration conventions for manual annotation; identify the geological taxonomy/review owner before finalizing the label vocabulary. Define dataset coverage, training tooling and evaluation thresholds when model work resumes. These inputs can be addressed at their respective milestones.
+Define calibration conventions for manual annotation. The project owner, who is a geologist and data scientist, confirms the initial vocabulary: limestone, dolostone, carbonaceous shale, unknown, mixed and unassessable. This is the list of choices a geoscientist uses to describe each depth interval; it can be versioned and extended if later core material requires it. Define dataset coverage, training tooling and evaluation thresholds when model work resumes. These inputs can be addressed at their respective milestones.
 
 ## 10. Technical references
 

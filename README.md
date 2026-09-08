@@ -38,7 +38,7 @@ Predictions remain separate from expert interpretations. Unknown, mixed and unas
 
 ## Deployment and project files
 
-The desktop edition is intended to bundle a local Java Spring Boot backend managed by JavaFX, together with a Java runtime and OpenCV native libraries for the target OS and CPU architecture. The web client uses the same API. The first desktop target is Windows 11. Initial web use is local; shared use follows successful functional testing and access-control, concurrency and restore validation.
+The desktop edition is intended to bundle a local Java Spring Boot backend managed by JavaFX, together with a Java runtime and OpenCV native libraries for the target OS and CPU architecture. The web client uses the same API. The first desktop target is Windows 11 x64 only, and depth is recorded in feet. Initial web use is local; shared use follows successful functional testing and access-control, concurrency and restore validation.
 
 A saved project will contain SQLite metadata, original images, derived assets and a versioned manifest. A database file alone will not contain the full project. Portable archives must use a consistent database snapshot and include referenced assets. Cross-device synchronization is outside the initial scope.
 
