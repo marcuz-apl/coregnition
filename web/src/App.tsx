@@ -2,69 +2,45 @@ import { ChangeEvent, FormEvent, useState } from "react";
 
 const API = "/api/v1";
 const labels = ["limestone", "dolostone", "carbonaceous shale", "unknown", "mixed", "unassessable"];
-
 type Project = { id: string; name: string };
 type Asset = { id: string; originalName: string; width: number; height: number; sha256: string };
-type Segment = { id: string; assetId: string; startDepthFeet: number; endDepthFeet: number; orientation: string };
+type Segment = { id: string; startDepthFeet: number; endDepthFeet: number };
 
 export function App() {
   const [project, setProject] = useState<Project | null>(null);
-  const [projectName, setProjectName] = useState("Core description pilot");
+  const [name, setName] = useState("Core description pilot");
   const [asset, setAsset] = useState<Asset | null>(null);
   const [segment, setSegment] = useState<Segment | null>(null);
   const [start, setStart] = useState("0");
   const [end, setEnd] = useState("1");
   const [orientation, setOrientation] = useState("TOP_TO_BOTTOM");
   const [label, setLabel] = useState(labels[0]);
-  const [reviewState, setReviewState] = useState("REVIEWED");
-  const [message, setMessage] = useState("Create a project to begin.");
-
-  async function createProject(event: FormEvent) {
-    event.preventDefault();
-    const response = await fetch(`${API}/projects`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: projectName }) });
-    if (!response.ok) return setMessage(await errorMessage(response));
-    setProject(await response.json());
-    setMessage("Project created. Import a core photograph.");
-  }
-
-  async function importAsset(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file || !project) return;
-    const form = new FormData();
-    form.append("file", file);
-    const response = await fetch(`${API}/projects/${project.id}/assets`, { method: "POST", body: form });
-    if (!response.ok) return setMessage(await errorMessage(response));
-    setAsset(await response.json());
-    setMessage("Image imported. Set its depth interval.");
-  }
-
-  async function createSegment(event: FormEvent) {
-    event.preventDefault();
-    if (!project || !asset) return;
-    const response = await fetch(`${API}/projects/${project.id}/segments`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ assetId: asset.id, startDepthFeet: Number(start), endDepthFeet: Number(end), orientation }) });
-    if (!response.ok) return setMessage(await errorMessage(response));
-    setSegment(await response.json());
-    setMessage("Segment calibrated. Add its reviewed lithology.");
-  }
-
-  async function annotate(event: FormEvent) {
-    event.preventDefault();
-    if (!project || !segment) return;
-    const response = await fetch(`${API}/projects/${project.id}/segments/${segment.id}/annotations`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ label, reviewState }) });
-    if (!response.ok) return setMessage(await errorMessage(response));
-    setMessage("Annotation saved. Export the project description when ready.");
-  }
-
-  return <main>
-    <header><p className="eyebrow">COREGNITION / M1</p><h1>Core description workspace</h1><p className="lede">Map a core photograph to depth, record the lithology and keep every decision reviewable.</p></header>
-    <p className="status" role="status">{message}</p>
-    <section className="grid">
-      <form className="card" onSubmit={createProject}><span className="step">01</span><h2>Project</h2><label>Project name<input value={projectName} onChange={(event) => setProjectName(event.target.value)} /></label><button type="submit">Create project</button>{project && <p className="success">{project.name}</p>}</form>
-      <section className="card"><span className="step">02</span><h2>Core image</h2><label className="upload">Import PNG, JPEG or TIFF<input type="file" accept="image/png,image/jpeg,image/tiff" onChange={importAsset} disabled={!project} /></label>{asset && project && <><img className="preview" src={`${API}/projects/${project.id}/assets/${asset.id}/content`} alt="Imported core" /><p className="meta">{asset.originalName} · {asset.width} × {asset.height}px</p></>}</section>
-      <form className="card" onSubmit={createSegment}><span className="step">03</span><h2>Depth calibration</h2><div className="row"><label>Start (ft)<input type="number" min="0" step="0.01" value={start} onChange={(event) => setStart(event.target.value)} /></label><label>End (ft)<input type="number" min="0" step="0.01" value={end} onChange={(event) => setEnd(event.target.value)} /></label></div><label>Orientation<select value={orientation} onChange={(event) => setOrientation(event.target.value)}><option>TOP_TO_BOTTOM</option><option>BOTTOM_TO_TOP</option></select></label><button type="submit" disabled={!asset}>Save segment</button></form>
-      <form className="card" onSubmit={annotate}><span className="step">04</span><h2>Manual description</h2><label>Lithology<select value={label} onChange={(event) => setLabel(event.target.value)}>{labels.map((value) => <option key={value}>{value}</option>)}</select></label><label>Review state<select value={reviewState} onChange={(event) => setReviewState(event.target.value)}><option>REVIEWED</option><option>UNREVIEWED</option></select></label><button type="submit" disabled={!segment}>Save annotation</button>{project && <a className="export" href={`${API}/projects/${project.id}/export.csv`}>Download CSV export</a>}</form>
-    </section>
+  const [review, setReview] = useState("REVIEWED");
+  const [busy, setBusy] = useState("");
+  const [status, setStatus] = useState({ kind: "info", text: "Create a project to begin." });
+  const [fileKey, setFileKey] = useState(0);
+  const step = !project ? 1 : !asset ? 2 : !segment ? 3 : 4;
+  const message = (kind: string, text: string) => setStatus({ kind, text });
+  async function run(action: string, task: () => Promise<void>) { setBusy(action); try { await task(); } catch (error) { message("error", error instanceof Error ? error.message : "Something went wrong. Try again."); } finally { setBusy(""); } }
+  async function createProject(event: FormEvent) { event.preventDefault(); if (!name.trim()) return message("error", "Enter a project name first."); await run("project", async () => { const response = await fetch(`${API}/projects`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: name.trim() }) }); if (!response.ok) throw new Error(await errorMessage(response)); setProject(await response.json()); message("success", "Project created. Add the first core image."); }); }
+  async function importAsset(event: ChangeEvent<HTMLInputElement>) { const file = event.target.files?.[0]; if (!file || !project) return; await run("asset", async () => { const form = new FormData(); form.append("file", file); const response = await fetch(`${API}/projects/${project.id}/assets`, { method: "POST", body: form }); if (!response.ok) throw new Error(await errorMessage(response)); setAsset(await response.json()); setSegment(null); message("success", "Image imported. Set its depth interval below."); }); }
+  async function createSegment(event: FormEvent) { event.preventDefault(); if (!project || !asset) return; const from = Number(start), to = Number(end); if (!Number.isFinite(from) || !Number.isFinite(to) || from < 0 || to <= from) return message("error", "End depth must be greater than start depth, using non-negative feet."); await run("segment", async () => { const response = await fetch(`${API}/projects/${project.id}/segments`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ assetId: asset.id, startDepthFeet: from, endDepthFeet: to, orientation }) }); if (!response.ok) throw new Error(await errorMessage(response)); setSegment(await response.json()); message("success", "Depth interval saved. Add a reviewed lithology."); }); }
+  async function annotate(event: FormEvent) { event.preventDefault(); if (!project || !segment) return; await run("annotation", async () => { const response = await fetch(`${API}/projects/${project.id}/segments/${segment.id}/annotations`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ label, reviewState: review }) }); if (!response.ok) throw new Error(await errorMessage(response)); message("success", "Annotation saved. Your interval is ready to export."); }); }
+  function reset() { setProject(null); setAsset(null); setSegment(null); setName("Core description pilot"); setFileKey((value) => value + 1); message("info", "Create a project to begin."); }
+  const preview = project && asset ? `${API}/projects/${project.id}/assets/${asset.id}/content` : "";
+  const steps = ["Project", "Core image", "Depth calibration", "Description"];
+  return <main className="app-shell">
+    <header className="topbar"><div className="brand"><b>C</b><span>coregnition</span></div><span className="mode-pill">M1 · local workspace</span></header>
+    <section className="hero"><div><p className="eyebrow">CORE DESCRIPTION WORKSPACE</p><h1>Turn a core photo into a traceable description.</h1><p className="lede">Create a project, calibrate depth in feet, and record the lithology decisions you want to review later.</p></div><p className="local-note"><i /> Local data stays on this machine</p></section>
+    <div className={`status status-${status.kind}`} role="status"><span>{status.kind === "error" ? "!" : status.kind === "success" ? "✓" : "i"}</span>{status.text}</div>
+    <section className="workspace"><aside className="rail"><p className="rail-label">WORKFLOW</p>{steps.map((item, index) => { const number = index + 1, complete = number < step; return <div className={`rail-step ${number === step ? "active" : ""} ${complete ? "complete" : ""}`} key={item}><strong>{complete ? "✓" : `0${number}`}</strong><span>{item}<small>{complete ? "Complete" : number === step ? "Current step" : "Up next"}</small></span></div>; })}{project && <button className="text-button" type="button" onClick={reset}>Start another project</button>}</aside>
+      <div className="content-stack">
+        <form className={`panel ${step === 1 ? "panel-focus" : ""}`} onSubmit={createProject}><Heading number="01" title="Start a project" done={!!project} /><p className="help">Give this core description session a name.</p><div className="inline-form"><label>Project name<input value={name} onChange={(event) => setName(event.target.value)} disabled={!!project} placeholder="e.g. North bench, interval A" /></label><button disabled={!!project || !!busy}>{busy === "project" ? "Creating…" : "Create project"}</button></div>{project && <p className="created">✓ <b>{project.name}</b> · Ready for image import</p>}</form>
+        <section className={`panel ${step === 2 ? "panel-focus" : ""}`}><Heading number="02" title="Bring in a core image" done={!!asset} /><p className="help">PNG, JPEG, and TIFF files up to 100 MB are supported.</p><label className={`dropzone ${!project ? "disabled" : ""}`}><span className="upload-icon">↑</span><b>{busy === "asset" ? "Importing image…" : "Choose an image"}</b><small>{project ? "or drag and drop it here" : "Create a project to unlock image import"}</small><input key={fileKey} type="file" accept="image/png,image/jpeg,image/tiff" onChange={importAsset} disabled={!project || !!busy} /></label>{asset && project && <div className="asset-preview"><img src={preview} alt={`Imported ${asset.originalName}`} /><div><b>{asset.originalName}</b><span>{asset.width} × {asset.height}px</span><small>SHA-256 {asset.sha256.slice(0, 12)}…</small></div></div>}</section>
+        <form className={`panel ${step === 3 ? "panel-focus" : ""}`} onSubmit={createSegment}><Heading number="03" title="Calibrate the interval" done={!!segment} /><p className="help">Set the photographed interval in feet and confirm its orientation.</p><div className="field-grid"><label>Start depth <em>ft</em><input type="number" min="0" step="0.01" value={start} onChange={(event) => setStart(event.target.value)} disabled={!asset || !!busy} /></label><label>End depth <em>ft</em><input type="number" min="0" step="0.01" value={end} onChange={(event) => setEnd(event.target.value)} disabled={!asset || !!busy} /></label></div><div className="form-footer"><label>Image orientation<select value={orientation} onChange={(event) => setOrientation(event.target.value)} disabled={!asset || !!busy}><option value="TOP_TO_BOTTOM">Top to bottom</option><option value="BOTTOM_TO_TOP">Bottom to top</option></select></label><button disabled={!asset || !!busy}>{busy === "segment" ? "Saving…" : "Save interval"}</button></div>{segment && <p className="inline-success">✓ Interval recorded: {segment.startDepthFeet}–{segment.endDepthFeet} ft</p>}</form>
+        <form className={`panel ${step === 4 ? "panel-focus" : ""}`} onSubmit={annotate}><Heading number="04" title="Describe the lithology" /><p className="help">Choose the best current interpretation. You can revise it later.</p><div className="field-grid"><label>Lithology<select value={label} onChange={(event) => setLabel(event.target.value)} disabled={!segment || !!busy}>{labels.map((value) => <option key={value}>{value}</option>)}</select></label><label>Review state<select value={review} onChange={(event) => setReview(event.target.value)} disabled={!segment || !!busy}><option value="REVIEWED">Reviewed</option><option value="UNREVIEWED">Needs review</option></select></label></div><div className="form-footer"><button disabled={!segment || !!busy}>{busy === "annotation" ? "Saving…" : "Save description"}</button>{project && <a className="export-link" href={`${API}/projects/${project.id}/export.csv`}>Download CSV export ↓</a>}</div></form>
+      </div></section><footer><span>Coregnition M1</span><span>Depth units: feet</span><span>Local-first data workflow</span></footer>
   </main>;
 }
-
+function Heading({ number, title, done }: { number: string; title: string; done?: boolean }) { return <div className="panel-heading"><div><span className="panel-number">{number}</span><h2>{title}</h2></div>{done && <span className="done-badge">Complete</span>}</div>; }
 async function errorMessage(response: Response) { try { return (await response.json()).error ?? `Request failed (${response.status})`; } catch { return `Request failed (${response.status})`; } }
