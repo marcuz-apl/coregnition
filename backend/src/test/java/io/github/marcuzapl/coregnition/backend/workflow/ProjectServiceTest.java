@@ -8,6 +8,8 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.zip.ZipInputStream;
+import java.io.ByteArrayInputStream;
 import javax.imageio.ImageIO;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -80,6 +82,23 @@ class ProjectServiceTest {
         assertEquals(segment.id(), workspace.segments().getFirst().id());
         assertEquals(annotation.id(), workspace.annotations().getFirst().id());
         assertEquals("dolostone", workspace.annotations().getFirst().label());
+    }
+
+    @Test
+    void exportsSelfContainedProjectArchive() throws Exception {
+        ProjectRecord project = service.createProject("Archive well");
+        AssetRecord asset = service.importAsset(project.id(), new MockMultipartFile("file", "archive.png", "image/png", png()));
+        SegmentRecord segment = service.createSegment(project.id(), new CreateSegmentRequest(asset.id(), 4.0, 5.0, "TOP_TO_BOTTOM"));
+        service.annotate(project.id(), segment.id(), new CreateAnnotationRequest("limestone", "REVIEWED"));
+
+        byte[] archive = service.exportArchive(project.id());
+        try (ZipInputStream zip = new ZipInputStream(new ByteArrayInputStream(archive))) {
+            assertEquals("manifest.json", zip.getNextEntry().getName());
+            String manifest = new String(zip.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+            assertTrue(manifest.contains("Archive well"));
+            assertTrue(manifest.contains("limestone"));
+            assertEquals("assets/" + asset.id() + ".png", zip.getNextEntry().getName());
+        }
     }
 
     private static byte[] png() throws Exception {

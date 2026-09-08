@@ -15,6 +15,10 @@ import java.util.HexFormat;
 import java.util.Locale;
 import java.util.Set;
 import java.util.List;
+import java.io.ByteArrayOutputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
@@ -27,9 +31,11 @@ public class ProjectService {
     private static final Set<String> REVIEW_STATES = Set.of("UNREVIEWED", "REVIEWED");
     private final ProjectStore store;
     private final Path storageRoot;
+    private final ObjectMapper mapper;
 
-    public ProjectService(ProjectStore store, @Value("${coregnition.storage-root:data/projects}") String storageRoot) throws IOException {
+    public ProjectService(ProjectStore store, ObjectMapper mapper, @Value("${coregnition.storage-root:data/projects}") String storageRoot) throws IOException {
         this.store = store;
+        this.mapper = mapper;
         this.storageRoot = Path.of(storageRoot).toAbsolutePath().normalize();
         Files.createDirectories(this.storageRoot);
     }
@@ -46,6 +52,22 @@ public class ProjectService {
     public ProjectWorkspace workspace(String projectId) {
         ProjectRecord project = store.project(projectId).orElseThrow(() -> new ProjectNotFoundException(projectId));
         return new ProjectWorkspace(project, store.assets(projectId), store.segments(projectId), store.annotations(projectId));
+    }
+
+    public byte[] exportArchive(String projectId) throws IOException {
+        ProjectWorkspace workspace = workspace(projectId);
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        try (ZipOutputStream zip = new ZipOutputStream(output)) {
+            zip.putNextEntry(new ZipEntry("manifest.json"));
+            zip.write(mapper.writeValueAsBytes(workspace));
+            zip.closeEntry();
+            for (AssetRecord asset : workspace.assets()) {
+                zip.putNextEntry(new ZipEntry("assets/" + asset.id() + "." + extension(asset.originalName())));
+                Files.copy(assetPath(projectId, asset.id()), zip);
+                zip.closeEntry();
+            }
+        }
+        return output.toByteArray();
     }
 
     public AssetRecord importAsset(String projectId, MultipartFile upload) throws IOException {

@@ -55,4 +55,7 @@ public class ProjectController {
 
     @GetMapping(value = "/{projectId}/export.csv", produces = "text/csv")
     ResponseEntity<String> export(@PathVariable("projectId") String projectId) { return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=coregnition-export.csv").body(service.exportCsv(projectId)); }
+
+    @GetMapping(value = "/{projectId}/archive.zip", produces = "application/zip")
+    ResponseEntity<byte[]> archive(@PathVariable("projectId") String projectId) throws Exception { return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=coregnition-project.zip").body(service.exportArchive(projectId)); }
 }
