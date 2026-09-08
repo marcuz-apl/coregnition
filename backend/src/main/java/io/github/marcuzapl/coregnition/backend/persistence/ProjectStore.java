@@ -76,6 +76,16 @@ public class ProjectStore {
         return jdbc.query("SELECT r.id,r.segment_id,r.revision,r.label,r.review_state,r.created_at FROM annotations r JOIN segments s ON s.id=r.segment_id WHERE s.project_id=? AND r.revision=(SELECT MAX(r2.revision) FROM annotations r2 WHERE r2.segment_id=r.segment_id) ORDER BY r.created_at", (rs, row) -> new AnnotationRecord(rs.getString(1), rs.getString(2), rs.getInt(3), rs.getString(4), rs.getString(5), rs.getString(6)), projectId);
     }
 
+    public Optional<SegmentRecord> segment(String projectId, String segmentId) {
+        return jdbc.query("SELECT id,project_id,asset_id,start_depth_feet,end_depth_feet,orientation,created_at FROM segments WHERE project_id=? AND id=?", (rs, row) -> new SegmentRecord(rs.getString(1), rs.getString(2), rs.getString(3), rs.getDouble(4), rs.getDouble(5), rs.getString(6), rs.getString(7)), projectId, segmentId).stream().findFirst();
+    }
+
+    public Optional<AnnotationRecord> undoLatestAnnotation(String segmentId) {
+        Optional<AnnotationRecord> latest = jdbc.query("SELECT id,segment_id,revision,label,review_state,created_at FROM annotations WHERE segment_id=? ORDER BY revision DESC LIMIT 1", (rs, row) -> new AnnotationRecord(rs.getString(1), rs.getString(2), rs.getInt(3), rs.getString(4), rs.getString(5), rs.getString(6)), segmentId).stream().findFirst();
+        latest.ifPresent(annotation -> jdbc.update("DELETE FROM annotations WHERE id=?", annotation.id()));
+        return jdbc.query("SELECT id,segment_id,revision,label,review_state,created_at FROM annotations WHERE segment_id=? ORDER BY revision DESC LIMIT 1", (rs, row) -> new AnnotationRecord(rs.getString(1), rs.getString(2), rs.getInt(3), rs.getString(4), rs.getString(5), rs.getString(6)), segmentId).stream().findFirst();
+    }
+
     public SegmentRecord createSegment(String projectId, String assetId, double start, double end, String orientation) {
         String id = UUID.randomUUID().toString();
         String created = Instant.now().toString();

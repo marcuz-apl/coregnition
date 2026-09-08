@@ -170,8 +170,15 @@ public class ProjectService {
 
     public AnnotationRecord annotate(String projectId, String segmentId, CreateAnnotationRequest request) {
         requireProject(projectId);
+        store.segment(projectId, segmentId).orElseThrow(() -> new IllegalArgumentException("Segment not found: " + segmentId));
         if (request == null || request.label() == null || !LABELS.contains(request.label().toLowerCase(Locale.ROOT)) || request.reviewState() == null || !REVIEW_STATES.contains(request.reviewState().toUpperCase(Locale.ROOT))) throw new IllegalArgumentException("Label must be one of the configured lithology labels and reviewState must be REVIEWED or UNREVIEWED");
         return store.annotate(segmentId, request.label().toLowerCase(Locale.ROOT), request.reviewState().toUpperCase(Locale.ROOT));
+    }
+
+    public java.util.Optional<AnnotationRecord> undoLatestAnnotation(String projectId, String segmentId) {
+        requireProject(projectId);
+        store.segment(projectId, segmentId).orElseThrow(() -> new IllegalArgumentException("Segment not found: " + segmentId));
+        return store.undoLatestAnnotation(segmentId);
     }
 
     public String exportCsv(String projectId) {

@@ -77,6 +77,21 @@ class ProjectServiceTest {
     }
 
     @Test
+    void undoingLatestAnnotationRestoresThePreviousRevision() throws Exception {
+        ProjectRecord project = service.createProject("Revision undo");
+        AssetRecord asset = service.importAsset(project.id(), new MockMultipartFile("file", "revision.png", "image/png", png()));
+        SegmentRecord segment = service.createSegment(project.id(), new CreateSegmentRequest(asset.id(), 1.0, 2.0, "TOP_TO_BOTTOM"));
+        service.annotate(project.id(), segment.id(), new CreateAnnotationRequest("limestone", "UNREVIEWED"));
+        service.annotate(project.id(), segment.id(), new CreateAnnotationRequest("dolostone", "REVIEWED"));
+
+        AnnotationRecord restored = service.undoLatestAnnotation(project.id(), segment.id()).orElseThrow();
+
+        assertEquals(1, restored.revision());
+        assertEquals("limestone", restored.label());
+        assertEquals("UNREVIEWED", restored.reviewState());
+    }
+
+    @Test
     void listsProjectsAndReloadsWorkspaceRecords() throws Exception {
         ProjectRecord project = service.createProject("Reloadable well");
         AssetRecord asset = service.importAsset(project.id(), new MockMultipartFile("file", "reload.png", "image/png", png()));
