@@ -27,6 +27,7 @@ v0.0.1 (Planning and architecture baseline)
   - **Safe image handling**: Restricts imports to PNG, JPEG and TIFF, validates decoded images, stores project-relative assets, records SHA-256 checksums and rejects duplicate imports.
   - **Client rollout**: Defines the local web app as the first usable M1 client; JavaFX desktop parity follows in M3 against the same API.
   - **Usable first pass**: Adds a guided project workspace with progress rail, image preview and metadata, depth validation, clear loading/error states, reset workflow and responsive styling.
+  - **Reloadable review state**: Project workspaces now restore imported images, saved intervals and each interval's latest lithology/review annotation.
 
 ### [v0.1.1] — 2026-09-08
 **docs: Linux foundation and release tooling**

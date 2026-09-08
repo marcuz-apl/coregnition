@@ -45,7 +45,7 @@ public class ProjectService {
 
     public ProjectWorkspace workspace(String projectId) {
         ProjectRecord project = store.project(projectId).orElseThrow(() -> new ProjectNotFoundException(projectId));
-        return new ProjectWorkspace(project, store.assets(projectId), store.segments(projectId));
+        return new ProjectWorkspace(project, store.assets(projectId), store.segments(projectId), store.annotations(projectId));
     }
 
     public AssetRecord importAsset(String projectId, MultipartFile upload) throws IOException {

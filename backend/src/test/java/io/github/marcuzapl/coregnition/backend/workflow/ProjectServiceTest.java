@@ -70,6 +70,7 @@ class ProjectServiceTest {
         ProjectRecord project = service.createProject("Reloadable well");
         AssetRecord asset = service.importAsset(project.id(), new MockMultipartFile("file", "reload.png", "image/png", png()));
         SegmentRecord segment = service.createSegment(project.id(), new CreateSegmentRequest(asset.id(), 2.0, 3.0, "TOP_TO_BOTTOM"));
+        AnnotationRecord annotation = service.annotate(project.id(), segment.id(), new CreateAnnotationRequest("dolostone", "REVIEWED"));
 
         assertTrue(service.listProjects().stream().anyMatch(item -> item.id().equals(project.id())));
         ProjectWorkspace workspace = service.workspace(project.id());
@@ -77,6 +78,8 @@ class ProjectServiceTest {
         assertEquals(1, workspace.assets().size());
         assertEquals(asset.id(), workspace.assets().getFirst().id());
         assertEquals(segment.id(), workspace.segments().getFirst().id());
+        assertEquals(annotation.id(), workspace.annotations().getFirst().id());
+        assertEquals("dolostone", workspace.annotations().getFirst().label());
     }
 
     private static byte[] png() throws Exception {
