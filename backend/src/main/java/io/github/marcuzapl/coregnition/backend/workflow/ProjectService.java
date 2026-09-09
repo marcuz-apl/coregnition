@@ -190,10 +190,18 @@ public class ProjectService {
         return store.undoLatestAnnotation(segmentId);
     }
 
-    public String exportCsv(String projectId) {
+    public String exportCsv(String projectId) { return exportCsv(projectId, false); }
+
+    public String exportCsv(String projectId, boolean reviewedOnly) {
         ProjectRecord project = store.project(projectId).orElseThrow(() -> new ProjectNotFoundException(projectId));
+        var rows = store.exportRows(projectId);
+        if (reviewedOnly) {
+            if (rows.isEmpty()) throw new ReviewIncompleteException("Add at least one depth interval before exporting a reviewed CSV.");
+            long pending = rows.stream().filter(row -> !"REVIEWED".equals(row.reviewState()) || row.label().isBlank()).count();
+            if (pending > 0) throw new ReviewIncompleteException("Review all intervals before exporting a reviewed CSV (" + pending + " remaining).");
+        }
         StringBuilder csv = new StringBuilder("segment_id,asset_id,original_name,start_depth_feet,end_depth_feet,orientation,label,review_state,depth_unit,well_name,asset_sha256,region_x,region_y,region_width,region_height\n");
-        for (ProjectStore.SegmentExportRow row : store.exportRows(projectId)) csv.append(csv(row.id())).append(',').append(csv(row.assetId())).append(',').append(csv(row.originalName())).append(',').append(row.startFeet()).append(',').append(row.endFeet()).append(',').append(csv(row.orientation())).append(',').append(csv(row.label())).append(',').append(csv(row.reviewState())).append(',').append(csv("feet")).append(',').append(csv(project.name())).append(',').append(csv(row.assetSha256())).append(',').append(csv(row.regionX())).append(',').append(csv(row.regionY())).append(',').append(csv(row.regionWidth())).append(',').append(csv(row.regionHeight())).append('\n');
+        for (ProjectStore.SegmentExportRow row : rows) csv.append(csv(row.id())).append(',').append(csv(row.assetId())).append(',').append(csv(row.originalName())).append(',').append(row.startFeet()).append(',').append(row.endFeet()).append(',').append(csv(row.orientation())).append(',').append(csv(row.label())).append(',').append(csv(row.reviewState())).append(',').append(csv("feet")).append(',').append(csv(project.name())).append(',').append(csv(row.assetSha256())).append(',').append(csv(row.regionX())).append(',').append(csv(row.regionY())).append(',').append(csv(row.regionWidth())).append(',').append(csv(row.regionHeight())).append('\n');
         return csv.toString();
     }
 

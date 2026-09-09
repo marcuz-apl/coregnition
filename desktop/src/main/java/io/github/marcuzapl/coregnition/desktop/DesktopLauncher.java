@@ -16,7 +16,7 @@ public final class DesktopLauncher {
         if (Files.isRegularFile(bundledBackend) && options.stream().noneMatch(s -> s.startsWith("--backend-jar="))) {
             options.add("--backend-jar=" + bundledBackend);
             if (options.stream().noneMatch(s -> s.startsWith("--data-dir=")))
-                options.add("--data-dir=" + Path.of(System.getProperty("user.home"), ".local", "share", "coregnition"));
+                options.add("--data-dir=" + PlatformPaths.dataDirectory());
         }
         if (options.stream().anyMatch(s -> s.startsWith("--backend-jar=")) && options.stream().noneMatch(s -> s.startsWith("--port="))) {
             try (ServerSocket socket = new ServerSocket(0, 0, java.net.InetAddress.getLoopbackAddress())) {

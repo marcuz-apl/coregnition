@@ -64,6 +64,34 @@ class ProjectServiceTest {
     }
 
     @Test
+    void reviewedExportRequiresEveryLatestAnnotationToBeReviewed() throws Exception {
+        var project = service.createProject("Review gate");
+        var asset = service.importAsset(project.id(), new MockMultipartFile("file", "core.png", "image/png", png()));
+        var first = service.createSegment(project.id(), new CreateSegmentRequest(asset.id(), 0.0, 1.0, "TOP_TO_BOTTOM"));
+        var second = service.createSegment(project.id(), new CreateSegmentRequest(asset.id(), 1.0, 2.0, "TOP_TO_BOTTOM"));
+        service.annotate(project.id(), first.id(), new CreateAnnotationRequest("limestone", "REVIEWED"));
+        assertTrue(assertThrows(ReviewIncompleteException.class, () -> service.exportCsv(project.id(), true)).getMessage().contains("1 remaining"));
+        assertTrue(service.exportCsv(project.id()).contains(second.id()), "Draft export must retain unfinished intervals");
+        service.annotate(project.id(), second.id(), new CreateAnnotationRequest("unknown", "UNREVIEWED"));
+        assertThrows(ReviewIncompleteException.class, () -> service.exportCsv(project.id(), true));
+        service.annotate(project.id(), second.id(), new CreateAnnotationRequest("mixed", "REVIEWED"));
+        String reviewed = service.exportCsv(project.id(), true);
+        assertTrue(reviewed.contains(first.id()));
+        assertTrue(reviewed.contains(second.id()));
+        assertTrue(reviewed.contains("mixed"));
+        assertEquals(service.exportCsv(project.id()), reviewed);
+        service.undoLatestAnnotation(project.id(), second.id());
+        assertThrows(ReviewIncompleteException.class, () -> service.exportCsv(project.id(), true));
+    }
+
+    @Test
+    void reviewedExportRequiresAtLeastOneInterval() {
+        var project = service.createProject("Empty review");
+        assertThrows(ReviewIncompleteException.class, () -> service.exportCsv(project.id(), true));
+        assertTrue(service.exportCsv(project.id()).startsWith("segment_id,"));
+    }
+
+    @Test
     void rejectsReversedDepthBounds() throws Exception {
         ProjectRecord project = service.createProject("Validation well");
         MockMultipartFile upload = new MockMultipartFile("file", "core.png", "image/png", png());

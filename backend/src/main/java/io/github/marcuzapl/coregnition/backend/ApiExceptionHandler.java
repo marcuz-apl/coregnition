@@ -10,6 +10,10 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 class ApiExceptionHandler {
+    @ExceptionHandler(io.github.marcuzapl.coregnition.backend.workflow.ReviewIncompleteException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    Map<String, String> incompleteReview(io.github.marcuzapl.coregnition.backend.workflow.ReviewIncompleteException exception) { return Map.of("error", exception.getMessage()); }
+
     @ExceptionHandler(ProjectNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     Map<String, String> notFound(ProjectNotFoundException exception) { return Map.of("error", exception.getMessage()); }

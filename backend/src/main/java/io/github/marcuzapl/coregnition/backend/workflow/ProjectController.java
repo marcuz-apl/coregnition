@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
@@ -61,7 +62,10 @@ public class ProjectController {
     ResponseEntity<AnnotationRecord> undoAnnotation(@PathVariable("projectId") String projectId, @PathVariable("segmentId") String segmentId) { return service.undoLatestAnnotation(projectId, segmentId).map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.noContent().build()); }
 
     @GetMapping(value = "/{projectId}/export.csv", produces = "text/csv")
-    ResponseEntity<String> export(@PathVariable("projectId") String projectId) { return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=coregnition-export.csv").body(service.exportCsv(projectId)); }
+    ResponseEntity<String> export(@PathVariable("projectId") String projectId, @RequestParam(defaultValue = "false") boolean reviewedOnly) {
+        String filename = reviewedOnly ? "coregnition-reviewed.csv" : "coregnition-export.csv";
+        return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename).body(service.exportCsv(projectId, reviewedOnly));
+    }
 
     @GetMapping(value = "/{projectId}/archive.zip", produces = "application/zip")
     ResponseEntity<byte[]> archive(@PathVariable("projectId") String projectId) throws Exception { return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=coregnition-project.zip").body(service.exportArchive(projectId)); }
