@@ -1,6 +1,6 @@
 # Coregnition — Product Requirements Document
 
-Status: proposed design; application implementation has not started.
+Status: implementation in progress. The local web manual workflow is implemented; desktop manual workflow and Linux application-folder packaging are implemented and verified on Linux/Xvfb. Recognition remains deferred pending labelled data.
 
 Date: 2026-09-08
 

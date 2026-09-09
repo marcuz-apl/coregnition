@@ -1,6 +1,6 @@
 # Coregnition
 
-Coregnition is a local-first geological core-image workspace. The web client is the first usable product; a JavaFX desktop client will follow. The current M1 workflow supports project creation, image import, depth calibration in feet, manual lithology annotation, project reload, CSV export, and portable ZIP export/import.
+Coregnition is a local-first geological core-image workspace. The web and JavaFX desktop clients use the same local backend for manual description. The current M1 workflow supports project creation, image import, depth calibration in feet, manual lithology annotation, project reload, CSV export, and portable ZIP export/import.
 
 ## Run locally
 
@@ -9,6 +9,20 @@ Coregnition is a local-first geological core-image workspace. The web client is 
 ```
 
 Open [http://localhost:3040](http://localhost:3040). The frontend uses port `3040`; its local Java backend uses port `3041`. Keep the launcher terminal open while testing.
+
+Run the desktop client (starts its own backend and uses the same repository-local data):
+
+```sh
+./scripts/run-local-desktop.sh
+```
+
+Build a Linux application folder with a bundled Java runtime:
+
+```sh
+./scripts/package-linux-desktop.sh
+```
+
+The script prints the executable path. Packaged desktop projects are stored in `~/.local/share/coregnition`; use project ZIP export/import to exchange projects with the web workspace.
 
 To build and test:
 

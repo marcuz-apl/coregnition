@@ -14,7 +14,7 @@ M0 is complete for Linux x64. M1 is the active milestone and provides the local 
 6. Export CSV or a ZIP archive containing the workspace manifest and image bytes.
 7. Import that archive into a fresh local project, restoring its images, intervals and latest annotations.
 
-There is no trained model, installer or shared deployment yet. Model training remains deferred until a representative labelled dataset and training scope are confirmed.
+The JavaFX desktop now provides project creation/reopening, image import, zoom/pan/rotation and source-region selection, depth intervals, annotation revision/undo, and CSV/ZIP exchange through the same backend. A Linux application-folder packaging script bundles the Java runtime; native installers and Windows validation remain release gates. There is no trained model or shared deployment yet. Model training remains deferred until a representative labelled dataset and training scope are confirmed.
 
 ## Local services
 
@@ -82,3 +82,23 @@ scripts/alfazen-commit 'feat: describe the user-facing capability'
 ```
 
 Routine `feat:` and `fix:` commits advance the patch/build within the active milestone line. Only an explicit `milestone:` or `release:` commit advances the minor version. Major changes require explicit owner approval through `ALFAZEN_MAJOR_APPROVED=1`.
+
+## Desktop operation and verification
+
+`./scripts/run-local-desktop.sh` builds the JVM modules and launches JavaFX with its own backend on an available loopback port. It uses repository-local `data/`, shared with the local web launcher. Avoid editing the same project in both clients at once; refresh before switching clients.
+
+`./scripts/package-linux-desktop.sh` verifies the modules and builds a Linux application folder and portable tar.gz archive under `desktop/target/linux-package-*/Coregnition`. Launch its `bin/Coregnition` executable. The package includes Java and the backend and stores projects under `~/.local/share/coregnition`. The manual workflow uses Java ImageIO, including TIFF decoding. Native OpenCV bundling remains part of the later recognition packaging gate.
+
+Desktop controls stay disabled while an API operation is pending to prevent competing edits. Network work, image decoding and export writes run outside the JavaFX application thread. Backend validation errors appear in the status line; multi-image import reports individual failed files and refreshes successfully imported assets. Exports download fully before replacing the destination file.
+
+The desktop HTTP tests exercise JSON escaping, field reordering, backend errors, multipart transfer and empty undo responses. The real-backend workflow test starts an isolated service and verifies import, depth/region persistence, annotation revision/undo, CSV provenance and archive restoration. Run the full build from the repository root so the backend JAR exists before desktop tests.
+
+For the JavaFX integration check on Linux with Xvfb:
+
+```sh
+xvfb-run -a ./mvnw -pl desktop test -Dcoregnition.uiTest=true
+```
+
+This opens the workspace against the temporary backend, selects a saved interval, saves a changed lithology through the UI, verifies persistence and writes `desktop/target/desktop-smoke.png`.
+
+On 2026-09-09, Maven verification passed 21 tests and the JavaFX integration check passed under Xvfb. The generated application successfully started its bundled backend and shut it down on exit. Physical Linux desktop usability and Windows installer validation remain separate from this automated display check.
