@@ -115,7 +115,7 @@ Validate file signatures, decoded dimensions and archive paths; guard against pa
 |---|---|---|
 | M0 — Local foundation | Supplied-image inventory and Linux x64 desktop packaging spike | JavaFX can start and stop the packaged Java backend and load OpenCV native libraries to decode the supplied PNG fixtures on Linux x64. |
 | M1 — Manual workflow | Shared backend plus local web import/view/calibrate/annotate/export client | FR-01–05 and FR-09 pass using representative fixtures; archive restore verified. |
-| M2 — Assisted interpretation (deferred) | Dataset, expert taxonomy, evaluation protocol, baseline model, persistent jobs and review interface | Owner supplies data and confirms training scope; domain owner accepts evaluation criteria before training; FR-06–08 pass and held-out evaluation meets the protocol or capability stays experimental. |
+| M2 — Assisted interpretation | Asynchronous jobs, texture/color baseline classifier, prediction provenance, and non-destructive review UI | FR-06–08 pass; asynchronous JobService, SQLite provenance store, AAPG heuristics, and workstation review UI verified. |
 | M3 — Desktop pilot | Packaged JavaFX client with equivalent workflow after the web pilot | FR-10 passes, offline startup works and pilot users complete the full workflow. |
 | M4 — Shared deployment | Authentication, permissions, PostgreSQL if justified, operations | Access isolation and restore checks pass under measured concurrent load. |
 

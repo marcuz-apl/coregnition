@@ -1,4 +1,13 @@
-import { Project, ProjectWorkspace, Asset, Segment, Annotation, Region } from "../types/coregnition";
+import {
+  Project,
+  ProjectWorkspace,
+  Asset,
+  Segment,
+  Annotation,
+  Region,
+  AnalysisJob,
+  Prediction,
+} from "../types/coregnition";
 
 const API_BASE = "http://localhost:3041/api/v1/projects";
 
@@ -100,6 +109,57 @@ export const api = {
     if (res.status === 204) return null;
     return handleResponse<Annotation>(res);
   },
+
+  // --- M2: Analysis Jobs & Predictions ---
+
+  async startAnalysis(projectId: string, segmentId?: string): Promise<AnalysisJob> {
+    const res = await fetch(`${API_BASE}/${projectId}/jobs/analyze`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(segmentId ? { segmentId } : {}),
+    });
+    return handleResponse<AnalysisJob>(res);
+  },
+
+  async listJobs(projectId: string): Promise<AnalysisJob[]> {
+    const res = await fetch(`${API_BASE}/${projectId}/jobs`);
+    return handleResponse<AnalysisJob[]>(res);
+  },
+
+  async getJob(projectId: string, jobId: string): Promise<AnalysisJob> {
+    const res = await fetch(`${API_BASE}/${projectId}/jobs/${jobId}`);
+    return handleResponse<AnalysisJob>(res);
+  },
+
+  async cancelJob(projectId: string, jobId: string): Promise<void> {
+    const res = await fetch(`${API_BASE}/${projectId}/jobs/${jobId}/cancel`, {
+      method: "POST",
+    });
+    if (!res.ok) {
+      throw new Error(`Failed to cancel job (${res.status})`);
+    }
+  },
+
+  async listPredictions(projectId: string): Promise<Prediction[]> {
+    const res = await fetch(`${API_BASE}/${projectId}/predictions`);
+    return handleResponse<Prediction[]>(res);
+  },
+
+  async getSegmentPredictions(projectId: string, segmentId: string): Promise<Prediction[]> {
+    const res = await fetch(`${API_BASE}/${projectId}/segments/${segmentId}/predictions`);
+    return handleResponse<Prediction[]>(res);
+  },
+
+  async acceptPrediction(projectId: string, segmentId: string, predictionId?: string): Promise<Annotation> {
+    const res = await fetch(`${API_BASE}/${projectId}/segments/${segmentId}/accept-prediction`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(predictionId ? { predictionId } : {}),
+    });
+    return handleResponse<Annotation>(res);
+  },
+
+  // --- Import / Export ---
 
   async importArchive(file: File): Promise<ProjectWorkspace> {
     const form = new FormData();

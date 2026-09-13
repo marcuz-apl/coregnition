@@ -20,6 +20,9 @@ export function HeaderBar() {
     toggleLeftDock,
     isRightDockOpen,
     toggleRightDock,
+    activeJob,
+    runAnalysis,
+    cancelAnalysis,
   } = useWorkspace();
 
   const [isNewProjOpen, setIsNewProjOpen] = useState(false);
@@ -30,6 +33,8 @@ export function HeaderBar() {
   const totalSegments = segments.length;
   const reviewedCount = annotations.filter((a) => a.reviewState === "REVIEWED").length;
   const isAllReviewed = totalSegments > 0 && reviewedCount === totalSegments;
+
+  const isJobRunning = activeJob && (activeJob.status === "QUEUED" || activeJob.status === "RUNNING");
 
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,7 +56,7 @@ export function HeaderBar() {
         <div className="brand-logo">
           <span className="brand-logo-icon">C</span>
           <span>Coregnition</span>
-          <Badge variant="neutral" size="sm">v0.4.0</Badge>
+          <Badge variant="neutral" size="sm">v0.5.0</Badge>
         </div>
 
         <button
@@ -89,7 +94,7 @@ export function HeaderBar() {
         </div>
       </div>
 
-      {/* Center section: View Mode Toggles */}
+      {/* Center section: View Mode Toggles & AI Run Trigger */}
       <div className="header-center">
         <div className="view-mode-pill">
           <button
@@ -114,6 +119,62 @@ export function HeaderBar() {
             Inspector
           </button>
         </div>
+
+        {activeProject && (
+          isJobRunning ? (
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <button
+                type="button"
+                className="header-btn"
+                style={{
+                  borderColor: "var(--accent-primary)",
+                  color: "var(--accent-primary)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                }}
+                disabled
+              >
+                <span
+                  style={{
+                    display: "inline-block",
+                    width: "10px",
+                    height: "10px",
+                    border: "2px solid currentColor",
+                    borderTopColor: "transparent",
+                    borderRadius: "50%",
+                    animation: "spin 0.8s linear infinite",
+                  }}
+                />
+                AI: {Math.round((activeJob?.progress || 0) * 100)}%
+              </button>
+              <button
+                type="button"
+                className="header-btn"
+                onClick={cancelAnalysis}
+                title="Cancel AI Job"
+                style={{ padding: "0 8px" }}
+              >
+                ✕
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="header-btn"
+              style={{
+                background: "linear-gradient(135deg, rgba(56, 189, 248, 0.12), rgba(168, 85, 247, 0.12))",
+                borderColor: "rgba(168, 85, 247, 0.5)",
+                color: "var(--text-primary)",
+                fontWeight: 600,
+              }}
+              onClick={() => runAnalysis()}
+              title="Run Machine-Assisted Lithology Classification across all segments"
+            >
+              ✦ AI Analysis
+            </button>
+          )
+        )}
       </div>
 
       {/* Right section: Review Progress, Exports & Theme Switcher */}

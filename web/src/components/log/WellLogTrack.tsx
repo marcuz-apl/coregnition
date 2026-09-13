@@ -15,9 +15,11 @@ export function WellLogTrack() {
     segments,
     assets,
     annotations,
+    predictions,
     activeSegment,
     setActiveSegment,
     setActiveAsset,
+    acceptPrediction,
   } = useWorkspace();
 
   const [hoverDepth, setHoverDepth] = useState<number | null>(null);
@@ -33,6 +35,14 @@ export function WellLogTrack() {
 
   const assetMap = new Map(assets.map((a) => [a.id, a]));
   const annotationMap = new Map(annotations.map((a) => [a.segmentId, a]));
+
+  // Index latest prediction by segmentId
+  const predictionMap = new Map<string, typeof predictions[0]>();
+  for (const pred of predictions) {
+    if (!predictionMap.has(pred.segmentId)) {
+      predictionMap.set(pred.segmentId, pred);
+    }
+  }
 
   let minDepth = 0;
   let maxDepth = 20;
@@ -75,7 +85,7 @@ export function WellLogTrack() {
         <div className="log-col-depth-header">Depth (ft)</div>
         <div className="log-col-photo-header">Core Photo</div>
         <div className="log-col-lith-header">AAPG Lithology</div>
-        <div className="log-col-desc-header">Interval & Review Status</div>
+        <div className="log-col-desc-header">Interval, AI Suggestion & Review Status</div>
       </div>
 
       {/* Main Continuous Log Viewport */}
@@ -126,8 +136,9 @@ export function WellLogTrack() {
             ) : (
               segments.map((seg) => {
                 const top = (seg.startDepthFeet - minDepth) * PIXELS_PER_FOOT;
-                const height = Math.max(34, (seg.endDepthFeet - seg.startDepthFeet) * PIXELS_PER_FOOT);
+                const height = Math.max(38, (seg.endDepthFeet - seg.startDepthFeet) * PIXELS_PER_FOOT);
                 const ann = annotationMap.get(seg.id);
+                const pred = predictionMap.get(seg.id);
                 const isSelected = seg.id === activeSegment?.id;
 
                 return (
@@ -137,13 +148,61 @@ export function WellLogTrack() {
                     style={{ top: `${top}px`, height: `${height}px` }}
                     onClick={() => handleSelectSegment(seg)}
                   >
-                    <div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
                       <strong style={{ fontFamily: "var(--font-mono)", color: "var(--text-primary)", fontSize: "0.78rem" }}>
                         {seg.startDepthFeet.toFixed(1)} – {seg.endDepthFeet.toFixed(1)} ft
                       </strong>
-                      <span style={{ marginLeft: "8px", color: "var(--text-secondary)", textTransform: "capitalize" }}>
+                      <span style={{ color: "var(--text-secondary)", textTransform: "capitalize", fontSize: "0.78rem" }}>
                         {ann?.label || "Unassigned"}
                       </span>
+
+                      {/* AI Suggestion Chip */}
+                      {pred && (
+                        <div
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "4px",
+                            padding: "1px 6px",
+                            borderRadius: "10px",
+                            fontSize: "0.68rem",
+                            background: pred.isUnknown
+                              ? "rgba(100, 116, 139, 0.15)"
+                              : "rgba(56, 189, 248, 0.12)",
+                            color: pred.isUnknown ? "var(--text-muted)" : "var(--accent-primary)",
+                            border: `1px solid ${pred.isUnknown ? "rgba(100, 116, 139, 0.3)" : "rgba(56, 189, 248, 0.3)"}`,
+                          }}
+                          title={`AI Model: ${pred.modelId} (${pred.preprocessingVersion})`}
+                        >
+                          <span>✦</span>
+                          <span style={{ textTransform: "capitalize" }}>
+                            {pred.isUnknown ? "Unknown (abstained)" : `${pred.suggestedLabel} ${Math.round(pred.confidence * 100)}%`}
+                          </span>
+
+                          {/* Quick 1-Click Accept if unreviewed */}
+                          {ann?.reviewState !== "REVIEWED" && !pred.isUnknown && (
+                            <button
+                              type="button"
+                              style={{
+                                background: "none",
+                                border: "none",
+                                color: "var(--accent-primary)",
+                                cursor: "pointer",
+                                padding: "0 2px",
+                                fontWeight: "bold",
+                                fontSize: "0.75rem",
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                acceptPrediction(seg.id, pred.id);
+                              }}
+                              title={`Accept AI recommendation: ${pred.suggestedLabel}`}
+                            >
+                              ✓
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>

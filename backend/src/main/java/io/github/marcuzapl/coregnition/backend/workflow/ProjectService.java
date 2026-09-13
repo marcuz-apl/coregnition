@@ -1,9 +1,15 @@
 package io.github.marcuzapl.coregnition.backend.workflow;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.marcuzapl.coregnition.backend.analysis.JobService;
 import io.github.marcuzapl.coregnition.backend.image.PngMetadata;
 import io.github.marcuzapl.coregnition.backend.image.PngMetadataReader;
 import io.github.marcuzapl.coregnition.backend.persistence.ProjectNotFoundException;
 import io.github.marcuzapl.coregnition.backend.persistence.ProjectStore;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -11,22 +17,18 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.HexFormat;
-import java.util.Locale;
-import java.util.Set;
-import java.util.List;
-import java.util.Map;
 import java.util.HashMap;
-import java.io.ByteArrayOutputStream;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
-import java.util.zip.ZipInputStream;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.awt.image.BufferedImage;
 import java.util.HashSet;
+import java.util.HexFormat;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
@@ -42,10 +44,12 @@ public class ProjectService {
     private final ProjectStore store;
     private final Path storageRoot;
     private final ObjectMapper mapper;
+    private final JobService jobService;
 
-    public ProjectService(ProjectStore store, ObjectMapper mapper, @Value("${coregnition.storage-root:data/projects}") String storageRoot) throws IOException {
+    public ProjectService(ProjectStore store, ObjectMapper mapper, JobService jobService, @Value("${coregnition.storage-root:data/projects}") String storageRoot) throws IOException {
         this.store = store;
         this.mapper = mapper;
+        this.jobService = jobService;
         this.storageRoot = Path.of(storageRoot).toAbsolutePath().normalize();
         Files.createDirectories(this.storageRoot);
     }
@@ -61,7 +65,7 @@ public class ProjectService {
 
     public ProjectWorkspace workspace(String projectId) {
         ProjectRecord project = store.project(projectId).orElseThrow(() -> new ProjectNotFoundException(projectId));
-        return new ProjectWorkspace(project, store.assets(projectId), store.segments(projectId), store.annotations(projectId));
+        return new ProjectWorkspace(project, store.assets(projectId), store.segments(projectId), store.annotations(projectId), store.predictions(projectId));
     }
 
     public byte[] exportArchive(String projectId) throws IOException {
@@ -140,19 +144,21 @@ public class ProjectService {
             String digest = sha256(temporary);
             if (store.assetBySha(projectId, digest).isPresent()) throw new DuplicateKeyException("This image is already imported in the project");
             try (InputStream input = Files.newInputStream(temporary)) {
-                java.awt.image.BufferedImage image = javax.imageio.ImageIO.read(input);
+                BufferedImage image = javax.imageio.ImageIO.read(input);
                 if (image == null) throw new IllegalArgumentException("The uploaded file is not a decodable image");
-                String relative = "assets/" + java.util.UUID.randomUUID() + "." + extension;
-                Path target = projectDirectory(projectId).resolve(relative).normalize();
-                Files.createDirectories(target.getParent());
-                Files.move(temporary, target, StandardCopyOption.ATOMIC_MOVE);
-                PngMetadata png = extension.equals("png") ? PngMetadataReader.read(target) : null;
-                try {
-                    return store.createAsset(projectId, original, relative, digest, image.getWidth(), image.getHeight(), png == null ? null : png.bitDepth(), png == null ? null : png.colorType());
-                } catch (RuntimeException failure) {
-                    Files.deleteIfExists(target);
-                    throw failure;
+                String relative = "assets/" + UUID.randomUUID() + "." + extension;
+                Path destination = projectDirectory(projectId).resolve(relative).normalize();
+                Files.move(temporary, destination, StandardCopyOption.REPLACE_EXISTING);
+                Integer bitDepth = null;
+                Integer colorType = null;
+                if ("png".equals(extension)) {
+                    try {
+                        PngMetadata metadata = PngMetadataReader.read(destination);
+                        bitDepth = metadata.bitDepth();
+                        colorType = metadata.colorType();
+                    } catch (Exception ignored) { }
                 }
+                return store.createAsset(projectId, original, relative, digest, image.getWidth(), image.getHeight(), bitDepth, colorType);
             }
         } finally {
             Files.deleteIfExists(temporary);
@@ -173,21 +179,76 @@ public class ProjectService {
         AssetRecord asset = store.asset(projectId, request.assetId()).orElseThrow(() -> new IllegalArgumentException("Asset not found: " + request.assetId()));
         boolean anyRegion = request.regionX() != null || request.regionY() != null || request.regionWidth() != null || request.regionHeight() != null;
         if (anyRegion && (request.regionX() == null || request.regionY() == null || request.regionWidth() == null || request.regionHeight() == null || request.regionX() < 0 || request.regionY() < 0 || request.regionWidth() <= 0 || request.regionHeight() <= 0 || request.regionX() + request.regionWidth() > asset.width() || request.regionY() + request.regionHeight() > asset.height())) throw new IllegalArgumentException("Selected image region must be inside the source image bounds");
-        if (store.hasOverlappingSegment(projectId, request.assetId(), request.startDepthFeet(), request.endDepthFeet())) throw new IllegalArgumentException("Depth interval overlaps an existing interval for this image");
-        return store.createSegment(projectId, request.assetId(), request.startDepthFeet(), request.endDepthFeet(), request.orientation().trim(), request.regionX(), request.regionY(), request.regionWidth(), request.regionHeight());
+        if (store.hasOverlappingSegment(projectId, request.assetId(), request.startDepthFeet(), request.endDepthFeet())) throw new IllegalArgumentException("Depth segment overlaps an existing interval for this core image");
+        return store.createSegment(projectId, asset.id(), request.startDepthFeet(), request.endDepthFeet(), request.orientation(), request.regionX(), request.regionY(), request.regionWidth(), request.regionHeight());
     }
 
     public AnnotationRecord annotate(String projectId, String segmentId, CreateAnnotationRequest request) {
         requireProject(projectId);
+        if (request == null || request.label() == null || request.reviewState() == null) throw new IllegalArgumentException("Label and review state are required");
+        String label = request.label().trim().toLowerCase(Locale.ROOT);
+        String reviewState = request.reviewState().trim().toUpperCase(Locale.ROOT);
+        if (!LABELS.contains(label)) throw new IllegalArgumentException("Unsupported lithology label: " + request.label());
+        if (!REVIEW_STATES.contains(reviewState)) throw new IllegalArgumentException("Unsupported review state: " + request.reviewState());
         store.segment(projectId, segmentId).orElseThrow(() -> new IllegalArgumentException("Segment not found: " + segmentId));
-        if (request == null || request.label() == null || !LABELS.contains(request.label().toLowerCase(Locale.ROOT)) || request.reviewState() == null || !REVIEW_STATES.contains(request.reviewState().toUpperCase(Locale.ROOT))) throw new IllegalArgumentException("Label must be one of the configured lithology labels and reviewState must be REVIEWED or UNREVIEWED");
-        return store.annotate(segmentId, request.label().toLowerCase(Locale.ROOT), request.reviewState().toUpperCase(Locale.ROOT));
+        return store.annotate(segmentId, label, reviewState);
     }
 
-    public java.util.Optional<AnnotationRecord> undoLatestAnnotation(String projectId, String segmentId) {
+    public Optional<AnnotationRecord> undoLatestAnnotation(String projectId, String segmentId) {
         requireProject(projectId);
         store.segment(projectId, segmentId).orElseThrow(() -> new IllegalArgumentException("Segment not found: " + segmentId));
         return store.undoLatestAnnotation(segmentId);
+    }
+
+    // --- M2 Analysis & Prediction Workflow ---
+
+    public JobRecord startAnalysis(String projectId, String segmentId) {
+        requireProject(projectId);
+        return jobService.startAnalysis(projectId, segmentId, this::assetPath);
+    }
+
+    public Optional<JobRecord> getJob(String projectId, String jobId) {
+        requireProject(projectId);
+        return jobService.getJob(projectId, jobId);
+    }
+
+    public List<JobRecord> listJobs(String projectId) {
+        requireProject(projectId);
+        return jobService.listJobs(projectId);
+    }
+
+    public boolean cancelJob(String projectId, String jobId) {
+        requireProject(projectId);
+        return jobService.cancelJob(projectId, jobId);
+    }
+
+    public List<PredictionRecord> listPredictions(String projectId) {
+        requireProject(projectId);
+        return jobService.listPredictions(projectId);
+    }
+
+    public List<PredictionRecord> predictionsForSegment(String projectId, String segmentId) {
+        requireProject(projectId);
+        return jobService.listPredictionsForSegment(projectId, segmentId);
+    }
+
+    public AnnotationRecord acceptPrediction(String projectId, String segmentId, String predictionId) {
+        requireProject(projectId);
+        store.segment(projectId, segmentId).orElseThrow(() -> new IllegalArgumentException("Segment not found: " + segmentId));
+        
+        PredictionRecord prediction = null;
+        if (predictionId != null && !predictionId.isBlank()) {
+            prediction = jobService.listPredictionsForSegment(projectId, segmentId).stream()
+                .filter(p -> p.id().equals(predictionId))
+                .findFirst()
+                .orElse(null);
+        }
+        if (prediction == null) {
+            prediction = jobService.latestPredictionForSegment(projectId, segmentId)
+                .orElseThrow(() -> new IllegalArgumentException("No prediction available for segment: " + segmentId));
+        }
+
+        return annotate(projectId, segmentId, new CreateAnnotationRequest(prediction.suggestedLabel(), "REVIEWED"));
     }
 
     public String exportCsv(String projectId) { return exportCsv(projectId, false); }
@@ -201,11 +262,28 @@ public class ProjectService {
             if (pending > 0) throw new ReviewIncompleteException("Review all intervals before exporting a reviewed CSV (" + pending + " remaining).");
         }
         StringBuilder csv = new StringBuilder("segment_id,asset_id,original_name,start_depth_feet,end_depth_feet,orientation,label,review_state,depth_unit,well_name,asset_sha256,region_x,region_y,region_width,region_height\n");
-        for (ProjectStore.SegmentExportRow row : rows) csv.append(csv(row.id())).append(',').append(csv(row.assetId())).append(',').append(csv(row.originalName())).append(',').append(row.startFeet()).append(',').append(row.endFeet()).append(',').append(csv(row.orientation())).append(',').append(csv(row.label())).append(',').append(csv(row.reviewState())).append(',').append(csv("feet")).append(',').append(csv(project.name())).append(',').append(csv(row.assetSha256())).append(',').append(csv(row.regionX())).append(',').append(csv(row.regionY())).append(',').append(csv(row.regionWidth())).append(',').append(csv(row.regionHeight())).append('\n');
+        for (ProjectStore.SegmentExportRow row : rows) {
+            csv.append(csv(row.id())).append(',')
+               .append(csv(row.assetId())).append(',')
+               .append(csv(row.originalName())).append(',')
+               .append(row.startFeet()).append(',')
+               .append(row.endFeet()).append(',')
+               .append(csv(row.orientation())).append(',')
+               .append(csv(row.label())).append(',')
+               .append(csv(row.reviewState())).append(',')
+               .append(csv("feet")).append(',')
+               .append(csv(project.name())).append(',')
+               .append(csv(row.assetSha256())).append(',')
+               .append(csv(row.regionX())).append(',')
+               .append(csv(row.regionY())).append(',')
+               .append(csv(row.regionWidth())).append(',')
+               .append(csv(row.regionHeight())).append('\n');
+        }
         return csv.toString();
     }
 
     private void requireProject(String id) { if (id == null || store.project(id).isEmpty()) throw new ProjectNotFoundException(id); }
+    
     private void validateArchiveSource(ProjectWorkspace source, Map<String, byte[]> entries) throws IOException {
         Set<String> assetIds = new HashSet<>();
         Set<String> assetChecksums = new HashSet<>();
@@ -232,6 +310,7 @@ public class ProjectService {
             if (annotation == null || annotation.segmentId() == null || !segmentIds.contains(annotation.segmentId()) || annotation.label() == null || !LABELS.contains(annotation.label().toLowerCase(Locale.ROOT)) || annotation.reviewState() == null || !REVIEW_STATES.contains(annotation.reviewState().toUpperCase(Locale.ROOT))) throw new IllegalArgumentException("Project archive has an invalid annotation");
         }
     }
+    
     private Path projectDirectory(String id) { return storageRoot.resolve(id).normalize(); }
     private static String safeName(String name) { if (name == null || name.isBlank() || Path.of(name).getFileName().toString().equals(".")) throw new IllegalArgumentException("Image filename is required"); return Path.of(name).getFileName().toString(); }
     private static String extension(String name) { int dot = name.lastIndexOf('.'); if (dot < 1 || dot == name.length() - 1) throw new IllegalArgumentException("Image must have a supported extension"); return name.substring(dot + 1).toLowerCase(Locale.ROOT); }

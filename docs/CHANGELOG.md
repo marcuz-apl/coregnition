@@ -16,11 +16,23 @@ v0.0.1 (Planning and architecture baseline)
               └─► v0.3.7+260908k (M1 local web manual workflow)
                     │
                     └─► v0.4.0 (Split-view geological workstation & engineering standards)
+        │
+        └─► v0.5.0 (M2 machine-assisted interpretation & analysis jobs)
 ```
 
 ## Milestone Change Log Details
 
-## Milestone Change Log Details
+### [v0.5.0] — 2026-09-13
+**milestone: machine-assisted interpretation, asynchronous jobs, and prediction provenance (M2)**
+- **Type**: `milestone` / `assisted interpretation & analysis jobs`
+- **Scope**: Implemented asynchronous analysis job engine, texture/color baseline classifier, full prediction provenance storage in SQLite, and non-destructive review & tuning UI in the geological workstation.
+- **Key Deliverables**:
+  - `JobService` (FR-06): Multi-threaded asynchronous execution, lifecycle state management (`QUEUED`, `RUNNING`, `SUCCEEDED`, `FAILED`, `CANCELLED`), cancellation support, and recovery of interrupted jobs upon restart.
+  - `TextureColorClassifier` (FR-07): Evaluates color moments (luminance, RGB tint) and texture gradient energy against AAPG taxonomy (`carbonaceous shale`, `limestone`, `dolostone`, `mixed`, `unknown`, `unassessable`), with strict abstention handling.
+  - SQLite Provenance Store: Tables `jobs` and `predictions` capturing model ID, model checksum, preprocessing pipeline version, source asset SHA-256, and normalized class score distributions.
+  - Non-Destructive Review & Tuning (FR-08): Predictions never overwrite manual annotations unless explicitly accepted.
+  - Workstation UI Integration: 1-click batch AI analysis in `HeaderBar`, real-time progress indicators, AI recommendation chips with quick-accept in `WellLogTrack`, and comprehensive class probability breakdown & provenance audit in `LithologyDock`.
+  - Automated Verification: Added `TextureColorClassifierTest` and `JobServiceTest`. Full verification suite (`./mvnw test` and `npm --prefix web run build`) passes with 0 errors and 0 failures across 32 tests.
 
 ### [v0.4.0] — 2026-09-13
 **milestone: geological workstation architecture and engineering standards**

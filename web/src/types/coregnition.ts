@@ -40,11 +40,41 @@ export interface Annotation {
   createdAt: string;
 }
 
+export type JobStatus = "QUEUED" | "RUNNING" | "SUCCEEDED" | "FAILED" | "CANCELLED";
+
+export interface AnalysisJob {
+  id: string;
+  projectId: string;
+  jobType: string;
+  status: JobStatus;
+  progress: number;
+  errorMessage?: string | null;
+  createdAt: string;
+  completedAt?: string | null;
+}
+
+export interface Prediction {
+  id: string;
+  projectId: string;
+  jobId: string;
+  segmentId: string;
+  suggestedLabel: string;
+  confidence: number;
+  classScores: Record<string, number> | string;
+  isUnknown: boolean;
+  modelId: string;
+  modelChecksum: string;
+  preprocessingVersion: string;
+  sourceAssetChecksum: string;
+  createdAt: string;
+}
+
 export interface ProjectWorkspace {
   project: Project;
   assets: Asset[];
   segments: Segment[];
   annotations: Annotation[];
+  predictions?: Prediction[];
 }
 
 export interface Region {

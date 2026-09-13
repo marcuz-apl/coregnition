@@ -2,24 +2,25 @@ package io.github.marcuzapl.coregnition.backend.workflow;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/projects")
@@ -60,6 +61,52 @@ public class ProjectController {
 
     @DeleteMapping("/{projectId}/segments/{segmentId}/annotations/latest")
     ResponseEntity<AnnotationRecord> undoAnnotation(@PathVariable("projectId") String projectId, @PathVariable("segmentId") String segmentId) { return service.undoLatestAnnotation(projectId, segmentId).map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.noContent().build()); }
+
+    // --- M2: Analysis Jobs & Predictions ---
+
+    @PostMapping("/{projectId}/jobs/analyze")
+    JobRecord startAnalysis(@PathVariable("projectId") String projectId, @RequestBody(required = false) Map<String, String> request) {
+        String segmentId = request == null ? null : request.get("segmentId");
+        return service.startAnalysis(projectId, segmentId);
+    }
+
+    @GetMapping("/{projectId}/jobs")
+    List<JobRecord> jobs(@PathVariable("projectId") String projectId) {
+        return service.listJobs(projectId);
+    }
+
+    @GetMapping("/{projectId}/jobs/{jobId}")
+    ResponseEntity<JobRecord> job(@PathVariable("projectId") String projectId, @PathVariable("jobId") String jobId) {
+        return service.getJob(projectId, jobId).map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/{projectId}/jobs/{jobId}/cancel")
+    ResponseEntity<Void> cancelJob(@PathVariable("projectId") String projectId, @PathVariable("jobId") String jobId) {
+        boolean cancelled = service.cancelJob(projectId, jobId);
+        return cancelled ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();
+    }
+
+    @GetMapping("/{projectId}/predictions")
+    List<PredictionRecord> predictions(@PathVariable("projectId") String projectId) {
+        return service.listPredictions(projectId);
+    }
+
+    @GetMapping("/{projectId}/segments/{segmentId}/predictions")
+    List<PredictionRecord> segmentPredictions(@PathVariable("projectId") String projectId, @PathVariable("segmentId") String segmentId) {
+        return service.predictionsForSegment(projectId, segmentId);
+    }
+
+    @PostMapping("/{projectId}/segments/{segmentId}/accept-prediction")
+    AnnotationRecord acceptPrediction(
+        @PathVariable("projectId") String projectId,
+        @PathVariable("segmentId") String segmentId,
+        @RequestBody(required = false) Map<String, String> request
+    ) {
+        String predictionId = request == null ? null : request.get("predictionId");
+        return service.acceptPrediction(projectId, segmentId, predictionId);
+    }
+
+    // --- Export ---
 
     @GetMapping(value = "/{projectId}/export.csv", produces = "text/csv")
     ResponseEntity<String> export(@PathVariable("projectId") String projectId, @RequestParam(defaultValue = "false") boolean reviewedOnly) {

@@ -1,12 +1,22 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  ReactNode,
+} from "react";
 import {
   Project,
+  ProjectWorkspace,
   Asset,
   Segment,
   Annotation,
   Region,
   ViewMode,
   ThemeMode,
+  AnalysisJob,
+  Prediction,
 } from "../types/coregnition";
 import { api } from "../api/client";
 
@@ -29,6 +39,13 @@ interface WorkspaceContextValue {
   contrast: number;
   isLoading: boolean;
   error: string | null;
+
+  // M2: Analysis & Predictions
+  activeJob: AnalysisJob | null;
+  predictions: Prediction[];
+  runAnalysis: (segmentId?: string) => Promise<void>;
+  cancelAnalysis: () => Promise<void>;
+  acceptPrediction: (segmentId: string, predictionId?: string) => Promise<void>;
 
   loadProjects: () => Promise<void>;
   selectProject: (id: string) => Promise<void>;
@@ -72,6 +89,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [segments, setSegments] = useState<Segment[]>([]);
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
+  const [predictions, setPredictions] = useState<Prediction[]>([]);
+  const [activeJob, setActiveJob] = useState<AnalysisJob | null>(null);
+
   const [activeAsset, setActiveAsset] = useState<Asset | null>(null);
   const [activeSegment, setActiveSegment] = useState<Segment | null>(null);
   const [activeRegion, setActiveRegion] = useState<Region | null>(null);
@@ -93,6 +113,36 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
 
+  const selectProject = useCallback(async (id: string) => {
+    try {
+      setIsLoading(true);
+      const ws = await api.getWorkspace(id);
+      setActiveProject(ws.project);
+      setAssets(ws.assets);
+      setSegments(ws.segments);
+      setAnnotations(ws.annotations);
+      if (ws.predictions) {
+        setPredictions(ws.predictions);
+      } else {
+        const preds = await api.listPredictions(id);
+        setPredictions(preds);
+      }
+
+      if (ws.assets.length > 0) {
+        setActiveAsset(ws.assets[0]);
+      } else {
+        setActiveAsset(null);
+      }
+      setActiveSegment(null);
+      setActiveRegion(null);
+      setActiveJob(null);
+    } catch (err: any) {
+      setError(err.message || "Failed to load project workspace");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   const loadProjects = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -106,45 +156,91 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, [activeProject]);
+  }, [activeProject, selectProject]);
 
-  const selectProject = useCallback(async (id: string) => {
-    try {
-      setIsLoading(true);
-      const ws = await api.getWorkspace(id);
-      setActiveProject(ws.project);
-      setAssets(ws.assets);
-      setSegments(ws.segments);
-      setAnnotations(ws.annotations);
+  // Active Job Polling
+  useEffect(() => {
+    if (!activeJob || !activeProject) return;
+    if (activeJob.status === "SUCCEEDED" || activeJob.status === "FAILED" || activeJob.status === "CANCELLED") {
+      return;
+    }
 
-      if (ws.assets.length > 0) {
-        setActiveAsset(ws.assets[0]);
-      } else {
-        setActiveAsset(null);
+    const interval = setInterval(async () => {
+      try {
+        const current = await api.getJob(activeProject.id, activeJob.id);
+        setActiveJob(current);
+        if (current.status === "SUCCEEDED") {
+          const preds = await api.listPredictions(activeProject.id);
+          setPredictions(preds);
+        }
+      } catch {
+        // ignore transient network glitch
       }
-      setActiveSegment(null);
-      setActiveRegion(null);
-    } catch (err: any) {
-      setError(err.message || "Failed to load project workspace");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+    }, 1000);
 
-  const createProject = useCallback(async (name: string): Promise<Project> => {
+    return () => clearInterval(interval);
+  }, [activeJob, activeProject]);
+
+  const runAnalysis = useCallback(
+    async (segmentId?: string) => {
+      if (!activeProject) return;
+      try {
+        setError(null);
+        const job = await api.startAnalysis(activeProject.id, segmentId);
+        setActiveJob(job);
+      } catch (err: any) {
+        setError(err.message || "Failed to start analysis job");
+      }
+    },
+    [activeProject]
+  );
+
+  const cancelAnalysis = useCallback(async () => {
+    if (!activeProject || !activeJob) return;
     try {
-      setIsLoading(true);
-      const proj = await api.createProject(name);
-      setProjects((prev) => [...prev, proj]);
-      await selectProject(proj.id);
-      return proj;
+      await api.cancelJob(activeProject.id, activeJob.id);
+      setActiveJob((prev) => (prev ? { ...prev, status: "CANCELLED" } : null));
     } catch (err: any) {
-      setError(err.message || "Failed to create project");
-      throw err;
-    } finally {
-      setIsLoading(false);
+      setError(err.message || "Failed to cancel analysis job");
     }
-  }, [selectProject]);
+  }, [activeProject, activeJob]);
+
+  const acceptPrediction = useCallback(
+    async (segmentId: string, predictionId?: string) => {
+      if (!activeProject) return;
+      try {
+        setIsLoading(true);
+        const annotation = await api.acceptPrediction(activeProject.id, segmentId, predictionId);
+        setAnnotations((prev) => [
+          ...prev.filter((a) => a.segmentId !== segmentId),
+          annotation,
+        ]);
+      } catch (err: any) {
+        setError(err.message || "Failed to accept prediction");
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [activeProject]
+  );
+
+  const createProject = useCallback(
+    async (name: string): Promise<Project> => {
+      try {
+        setIsLoading(true);
+        const proj = await api.createProject(name);
+        setProjects((prev) => [...prev, proj]);
+        await selectProject(proj.id);
+        return proj;
+      } catch (err: any) {
+        setError(err.message || "Failed to create project");
+        throw err;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [selectProject]
+  );
 
   const importAsset = useCallback(
     async (file: File): Promise<Asset> => {
@@ -256,6 +352,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         setAssets(ws.assets);
         setSegments(ws.segments);
         setAnnotations(ws.annotations);
+        if (ws.predictions) setPredictions(ws.predictions);
         if (ws.assets.length > 0) setActiveAsset(ws.assets[0]);
       } catch (err: any) {
         setError(err.message || "Failed to import archive");
@@ -306,6 +403,12 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         contrast,
         isLoading,
         error,
+
+        activeJob,
+        predictions,
+        runAnalysis,
+        cancelAnalysis,
+        acceptPrediction,
 
         loadProjects,
         selectProject,
