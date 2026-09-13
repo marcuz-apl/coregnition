@@ -85,7 +85,7 @@ class ProjectServiceTest {
     }
 
     @Test
-    void reviewedExportRequiresAtLeastOneInterval() {
+    void reviewedExportRequiresAtLeastOneInterval() throws Exception {
         var project = service.createProject("Empty review");
         assertThrows(ReviewIncompleteException.class, () -> service.exportCsv(project.id(), true));
         assertTrue(service.exportCsv(project.id()).startsWith("segment_id,"));
