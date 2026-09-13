@@ -4,6 +4,11 @@ This directory contains architectural, operational, specification, and verificat
 
 ## Index
 
+## Index
+
+- **[Agent Guidelines & Engineering Standards](../AGENTS.md)**  
+  Repository engineering standards, verification gates, zero-defect rules, and architecture map.
+
 - **[Product Requirements Document (PRD)](PRD.md)**  
   Product requirements, functional specifications (FR-01 to FR-10), data models, and milestone roadmaps.
 
