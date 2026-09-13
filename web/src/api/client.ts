@@ -9,7 +9,7 @@ import {
   Prediction,
 } from "../types/coregnition";
 
-const API_BASE = "http://localhost:3041/api/v1/projects";
+const API_BASE = "/api/v1/projects";
 
 async function handleResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {
