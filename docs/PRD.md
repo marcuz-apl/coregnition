@@ -1,6 +1,6 @@
 # Coregnition — Product Requirements Document
 
-Status: implementation in progress. The local web manual workflow is implemented; desktop manual workflow and Linux application-folder packaging are implemented and verified on Linux/Xvfb. Recognition remains deferred pending labelled data.
+Status: active v0.4.0 development. M1 desktop and backend manual workflows are verified; transitioning web frontend to the split-view geological workstation (continuous well-log track + high-res core inspector with AAPG symbology and dual dark/light themes).
 
 Date: 2026-09-08
 
@@ -26,9 +26,9 @@ Confirmed by the project owner: Linux x64 is the first desktop target, initial w
 
 1. Create a project and well; record depths in feet and capture image acquisition context when known.
 2. Import JPEG, PNG or TIFF photographs. Preserve originals and checksums; reject unsupported, corrupt or oversized input with an actionable explanation. Multi-page TIFF is rejected explicitly in the MVP.
-3. Inspect thumbnails and a zoomable viewer. Rotate the working view, crop core regions and exclude trays, rulers, gaps and labels without modifying the original.
+3. Inspect imagery across two synchronized views: a continuous vertical well-log track calibrated to depth in feet, and an expansive high-resolution core inspector canvas with pan/zoom (0.25x–8x), 90° rotation, contrast/brightness enhancements, and source-coordinate region selection.
 4. Assign each core segment an orientation and start/end depth. Confirm segment order manually; a multi-row tray must not be treated as one continuous depth axis.
-5. Annotate intervals using a versioned lithology vocabulary. The initial classes are limestone, dolostone and carbonaceous shale, reflecting the currently available cut cores. Include unknown, mixed and unassessable outcomes.
+5. Annotate intervals using standard AAPG/USGS geological symbology and color codes (Limestone masonry brick, Dolostone rhombic, Carbonaceous Shale laminations, Sandstone stipple, Mixed/Unknown). Support instant 1-click lithology presets and undo revision stack.
 6. Run a selected, validated model on eligible segments. Show progress and allow cancellation; manual annotation remains available without a model.
 7. Review suggestions alongside original imagery. Accept, edit or reject each interval; retain original predictions separately from expert labels and record author, time and model provenance.
 8. Export depth-indexed CSV and a portable project archive. Export distinguishes provisional predictions from reviewed interpretations.

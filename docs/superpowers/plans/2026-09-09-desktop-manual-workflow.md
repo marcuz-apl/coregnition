@@ -2,7 +2,7 @@
 
 **Goal:** Complete the JavaFX manual workflow against the existing shared backend.
 **Architecture:** Typed HTTP client, JavaFX workspace, source-coordinate image viewer. All HTTP and file work runs off the JavaFX thread; requests are serialized by disabling workspace controls while busy.
-**Spec:** PRD.md sections 3–5, scoped to manual description; trained recognition and cross-platform installers remain separate release gates.
+**Spec:** docs/PRD.md sections 3–5, scoped to manual description; trained recognition and cross-platform installers remain separate release gates.
 **Constraints:** Java 21, JavaFX 21.0.6, feet, preserved originals, shared backend validation and persistence.
 
 - [x] Replace regex JSON parsing with Jackson; test escaped names, reordered fields, errors and request payloads using an HTTP fixture.

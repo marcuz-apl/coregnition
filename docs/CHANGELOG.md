@@ -14,9 +14,23 @@ v0.0.1 (Planning and architecture baseline)
         └─► v0.1.1 (Versioning reliability and Linux OpenCV validation)
               │
               └─► v0.3.7+260908k (M1 local web manual workflow)
+                    │
+                    └─► v0.4.0 (Split-view geological workstation & engineering standards)
 ```
 
 ## Milestone Change Log Details
+
+## Milestone Change Log Details
+
+### [v0.4.0] — 2026-09-13
+**milestone: geological workstation architecture and engineering standards**
+- **Type**: `milestone` / `architecture & standards overhaul`
+- **Scope**: Established repository AGENTS.md, updated PRD.md to specify the split-view geological workstation, fixed backend test suite, and organized project documentation under Apache 2.0 license.
+- **Key Deliverables**:
+  - `AGENTS.md`: Strict verification protocols, craftsmanship standards (zero minified source code), and architecture map.
+  - `docs/PRD.md`: Realigned requirements to Petrel/WellCAD split-view paradigm and AAPG symbology.
+  - `backend/src/test`: Resolved unhandled exception in `ProjectServiceTest`.
+  - `README.md`: Apache 2.0 license and organized documentation index.
 
 ### [v0.3.7+260908k] — 2026-09-08
 **feat: M1 local web manual workflow foundation**

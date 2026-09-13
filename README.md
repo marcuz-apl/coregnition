@@ -33,10 +33,16 @@ cd web && npm ci && npm run build
 
 ## Project documents
 
-- [Product requirements](PRD.md)
-- [Development technote](docs/development-technote.md)
-- [Linux M0 verification](docs/m0-linux-x64-verification.md)
-- [Changelog](docs/CHANGELOG.md)
+All detailed documentation is organized in the [`docs/`](docs/) directory:
+
+- **Specifications & Requirements**
+  - [Product Requirements Document (PRD)](docs/PRD.md) — Product requirements, functional specifications, data models, and milestone roadmaps.
+- **Architecture & Operations**
+  - [Development Technote](docs/development-technote.md) — Operational instructions, architecture details, ports, local runtime conventions, and packaging notes.
+- **Verification & Quality**
+  - [Linux M0 Verification](docs/m0-linux-x64-verification.md) — Linux x64 environment verification report, smoke tests, and baseline validation.
+- **History & Releases**
+  - [Changelog](docs/CHANGELOG.md) — Version chronicle, release progression, and notable changes.
 
 ## Architecture
 
@@ -47,3 +53,7 @@ Training and recognition are deferred until a representative labelled dataset is
 ## Repository rules
 
 Local databases, imported project assets, web dependencies and supplied image contents are ignored by Git. Do not add proprietary photographs or datasets to source control. Use the tracked Alfazen hooks and `scripts/alfazen-commit` for semantic changes.
+
+## License
+
+This project is licensed under the [Apache License 2.0](LICENSE).
